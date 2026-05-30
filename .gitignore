@@ -1,0 +1,7 @@
+__pycache__
+*.pyc
+.env
+test*.py
+temp*
+.venv
+cookies.txt
