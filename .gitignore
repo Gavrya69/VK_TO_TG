@@ -4,4 +4,4 @@ __pycache__
 test*.py
 temp*
 .venv
-cookies.txt
+database.db
