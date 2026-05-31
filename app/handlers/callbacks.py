@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 
 from handlers.menu import get_main_menu, get_delete_menu, get_back_button
 from handlers.states import GroupControl
-from services.vk import add_vk_group, delete_subscription
+from services.subscriptions import add_vk_group, delete_subscription
 from database.db import SessionLocal, get_subscriptions
 
 router = Router()

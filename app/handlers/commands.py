@@ -24,3 +24,5 @@ async def cmd_help(message: Message):
         "/start - Запуск бота\n"
         "/help - Показать доступные команды"
     )
+    
+    

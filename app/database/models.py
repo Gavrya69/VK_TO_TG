@@ -19,19 +19,6 @@ class User(Base):
         default=datetime.utcnow
     )
     
-    
-class Group(Base):
-    __tablename__ = "groups"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    vk_group_id: Mapped[int] = mapped_column(Integer, unique=True)
-    title: Mapped[str] = mapped_column(String(255))
-    last_post_id: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True
-    )
-
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
@@ -43,16 +30,3 @@ class Subscription(Base):
 
     user_id = mapped_column(Integer)
     group_id = mapped_column(Integer)
-
-
-class Post(Base):
-    __tablename__ = "posts"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    vk_post_id: Mapped[int] = mapped_column(Integer, unique=True)
-    group_id: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow
-    )
