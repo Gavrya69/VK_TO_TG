@@ -10,6 +10,7 @@ from database.db import (
     add_group,
     get_group,
     add_binding,
+    get_binding,
     get_bindings_by_chat,
     delete_binding,
     add_chat,
@@ -56,12 +57,11 @@ async def add_group_callback(callback: CallbackQuery, state: FSMContext):
     
 @router.message(GroupControl.waiting_for_add)
 async def process_group(message: Message, state: FSMContext):
-    link = message.text
+    link = int(message.text)
     chat_id = message.chat.id
-
+    
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
-
         if not chat:
             chat = await add_chat(
                 session=session,
@@ -71,68 +71,30 @@ async def process_group(message: Message, state: FSMContext):
             )
             
         group = await get_group(session, vk_group_id=link)
-
         if not group:
             group = await add_group(
                 session=session,
                 vk_group_id=link,
                 name=link,
+            )
+        
+        binding = await get_binding(session, vk_group_id=link, telegram_chat_id=chat_id)
+        if not binding:
+            await add_binding(
+                session=session,
+                vk_group_id=link,
+                telegram_chat_id=chat_id,
+            )
+            await message.answer(
+                "Привязка создана.",
+                reply_markup=get_main_menu()
+            )
+        else:
+            await message.answer(
+                "Данная группа уже привязана к этому чату.",
+                reply_markup=get_main_menu()
             )
             
-        await add_binding(
-            session=session,
-            vk_group_id=group.vk_group_id,
-            telegram_chat_id=chat.telegram_chat_id,
-        )
-
-    await message.answer(
-        "Привязка создана.",
-        reply_markup=get_main_menu()
-    )
-
-    await state.clear()
-    
-    
-@router.message(GroupControl.waiting_for_add)
-async def process_group(message: Message, state: FSMContext):
-    link = message.text
-    chat_id = message.chat.id
-
-    async with SessionLocal() as session:
-
-        # 1. получаем или создаём чат
-        chat = await get_chat(session, chat_id)
-
-        if not chat:
-            chat = await add_chat(
-                session=session,
-                chat_id=chat_id,
-                title=message.chat.title or "private",
-                chat_type=message.chat.type,
-            )
-
-        # 2. создаём VK группу (упрощённо — пока без API резолва)
-        group = await get_group(session, vk_group_id=link)
-
-        if not group:
-            group = await add_group(
-                session=session,
-                vk_group_id=link,
-                name=link,
-            )
-
-        # 3. создаём binding
-        await add_binding(
-            session=session,
-            vk_group_id=group.vk_group_id,
-            telegram_chat_id=chat.telegram_chat_id,
-        )
-
-    await message.answer(
-        "Привязка создана.",
-        reply_markup=get_main_menu()
-    )
-
     await state.clear()
     
     

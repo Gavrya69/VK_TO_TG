@@ -105,6 +105,18 @@ async def add_binding(
     
     return binding
 
+async def get_binding(
+    session: AsyncSession, 
+    vk_group_id: int,
+    telegram_chat_id: int
+):
+    result = await session.execute(
+        select(Binding).where(
+            Binding.vk_group_id == vk_group_id, 
+            Binding.telegram_chat_id == telegram_chat_id)
+    )
+    
+    return result.scalar_one_or_none()
 
 async def get_bindings_by_group(
     session: AsyncSession,
