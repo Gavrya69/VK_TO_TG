@@ -73,7 +73,7 @@ async def process_group(message: Message, state: FSMContext):
     
 @router.callback_query(F.data == "del_group")
 async def add_group_callback(callback: CallbackQuery, state: FSMContext):
-    
+
     async with SessionLocal() as session:
         subscriptions = await get_subscriptions(
             session=session,
@@ -89,12 +89,8 @@ async def add_group_callback(callback: CallbackQuery, state: FSMContext):
         await callback.answer("У тебя нет групп")
 
 @router.callback_query(F.data.startswith("del_group:"))
-async def delete_subscription_callback(
-    callback: CallbackQuery
-):
-    group_id = int(
-        callback.data.split(":")[1]
-    )
+async def delete_subscription_callback(callback: CallbackQuery):
+    group_id = int(callback.data.split(":")[1])
 
     async with SessionLocal() as session:
         await delete_subscription(
