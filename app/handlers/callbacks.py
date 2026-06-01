@@ -42,6 +42,15 @@ async def main_menu(callback: CallbackQuery, state: FSMContext):
     )
 
     await callback.answer()
+
+
+@router.callback_query(F.data == "close")
+async def main_menu(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    
+    await callback.message.delete()
+    
+    await callback.answer()
     
     
     
@@ -122,7 +131,7 @@ async def delete_binding_callback(callback: CallbackQuery):
     await callback.answer()
     
     
-@router.callback_query(F.data.startswith("del_group:"))
+@router.callback_query(F.data.startswith("del_group_menu:"))
 async def delete_binding_callback(callback: CallbackQuery):
     chat_id = callback.message.chat.id
     vk_group_id = int(callback.data.split(":")[1])
@@ -138,10 +147,46 @@ async def delete_binding_callback(callback: CallbackQuery):
             telegram_chat_id=chat_id,
         )
 
-    await callback.message.edit_text(
-        "Какую группу хотите удалить?",
-        reply_markup=get_delete_menu(bindings)
-    )
+    if bindings:
+        await callback.message.edit_text(
+            "Какую группу хотите удалить?",
+            reply_markup=get_delete_menu(bindings, menu_button=True)
+        )
+    else:
+        await callback.message.edit_text(
+            "Здесь нет групп.",
+            reply_markup=get_delete_menu(bindings, menu_button=True)
+        )
+
+    await callback.answer("Удалено")
+    
+    
+@router.callback_query(F.data.startswith("del_group_chat:"))
+async def delete_binding_callback(callback: CallbackQuery):
+    chat_id = callback.message.chat.id
+    vk_group_id = int(callback.data.split(":")[1])
+
+    async with SessionLocal() as session:
+        await delete_binding(
+            session=session,
+            vk_group_id=vk_group_id,
+            telegram_chat_id=chat_id,
+        )
+        bindings = await get_bindings_by_chat(
+            session=session,
+            telegram_chat_id=chat_id,
+        )
+        
+    if bindings:
+        await callback.message.edit_text(
+            "Какую группу хотите удалить?",
+            reply_markup=get_delete_menu(bindings, menu_button=False)
+        )
+    else:
+        await callback.message.edit_text(
+            "Здесь нет групп.",
+            reply_markup=get_delete_menu(bindings, menu_button=False)
+        )
 
     await callback.answer("Удалено")
     
