@@ -20,6 +20,9 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+# --------------------
+# VK GROUPS
+# --------------------
 
 async def add_group(
     session: AsyncSession, 
@@ -47,6 +50,10 @@ async def get_group(
     
     return result.scalar_one_or_none()
 
+
+# --------------------
+# TG CHATS
+# --------------------
 
 async def add_chat(
     session: AsyncSession,
@@ -76,6 +83,10 @@ async def get_chat(
     
     return result.scalar_one_or_none()
 
+
+# --------------------
+# BINDINGS (VK -> TG)
+# --------------------
 
 async def add_binding(
     session: AsyncSession,
