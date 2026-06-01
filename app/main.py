@@ -11,7 +11,7 @@ from handlers.commands import router as commands_router
 
 from database.db import init_db
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 async def startup() -> None:
@@ -23,20 +23,20 @@ async def startup() -> None:
 
     await init_db()
     
-    @dp.startup()
-    async def on_startup() -> None:
-        logger.info("Start.")
+    # @dp.startup()
+    # async def on_startup() -> None:
+    #     logger.info("Start.")
 
-    @dp.shutdown()
-    async def on_shutdown() -> None:
-        logger.info("Exit.")
+    # @dp.shutdown()
+    # async def on_shutdown() -> None:
+    #     logger.info("Exit.")
 
     await dp.start_polling(bot)
 
 
 def main() -> None:
     load_dotenv()
-    logging.basicConfig(level=logging.DEBUG)
+    # logging.basicConfig(level=logging.DEBUG)
     asyncio.run(startup())
 
 

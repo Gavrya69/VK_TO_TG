@@ -19,14 +19,20 @@ class User(Base):
         default=datetime.utcnow
     )
     
-
+    
+class Group(Base):
+    __tablename__ = "groups"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    
+    group_id = Mapped[int] = mapped_column(Integer)
+    name = Mapped[str] = mapped_column(String)
+    
+    
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id = mapped_column(
-        Integer,
-        primary_key=True
-    )
+    id = mapped_column(Integer,primary_key=True)
 
     user_id: Mapped[int] = mapped_column(Integer)
     group_id: Mapped[int] = mapped_column(Integer)

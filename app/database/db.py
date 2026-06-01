@@ -1,13 +1,13 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from database.models import Base, Subscription, TelegramTarget
+from database.models import Base, User, Subscription, TelegramTarget
 
 DATABASE_URL = "sqlite+aiosqlite:///data/database.db"
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,
+    echo=False,
 )
 
 SessionLocal = async_sessionmaker(
@@ -19,6 +19,32 @@ SessionLocal = async_sessionmaker(
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+
+async def add_user(
+    session: AsyncSession,
+    user_id: int
+):
+    user = User(
+        telegram_id=user_id
+    )
+    
+    session.add(user)
+    await session.commit()
+    
+    return user
+
+async def check_user(
+    session: AsyncSession,
+    user_id: int
+):
+    query = select(User).where(
+        User.telegram_id == user_id
+    )
+
+    result = await session.execute(query)
+    
+    return result.scalar_one_or_none()
 
 
 async def add_subscription(
