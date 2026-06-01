@@ -1,9 +1,11 @@
+import asyncio
 from aiogram import F, Router
 from aiogram.types import CallbackQuery, Message, ChatMemberUpdated
 from aiogram.fsm.context import FSMContext
 
 from handlers.menu import get_main_menu, get_delete_menu, get_back_button
 from handlers.states import GroupControl
+from services import sync_chat_admins  
 
 from database.db import (
     SessionLocal,
@@ -13,6 +15,7 @@ from database.db import (
     get_binding,
     get_bindings_by_chat,
     delete_binding,
+    delete_chat_admins,
     add_chat,
     get_chat,
 )
@@ -143,28 +146,20 @@ async def delete_binding_callback(callback: CallbackQuery):
     await callback.answer("Удалено")
     
     
-    
 @router.my_chat_member()
-async def bot_added(event: ChatMemberUpdated):
-
+async def on_bot_added(event: ChatMemberUpdated, bot):
     old = event.old_chat_member.status
     new = event.new_chat_member.status
-
-    if old in ("left", "kicked") and new in ("member", "administrator"):
-
-        async with SessionLocal() as session:
-
-            chat = await get_chat(
+    chat_id = event.chat.id
+    
+    async with SessionLocal() as session:
+        if old in ("left", "kicked") and new in ("member", "administrator"):
+            await asyncio.sleep(2) # for sync
+            await sync_chat_admins(
+                bot=bot,
                 session=session,
-                chat_id=event.chat.id
+                chat_id=chat_id,
             )
-
-            if chat:
-                return
-
-            await add_chat(
-                session=session,
-                chat_id=event.chat.id,
-                title=event.chat.title or "unknown",
-                chat_type=event.chat.type,
-            )
+        elif new in ("left", "kicked"):
+            await asyncio.sleep(2) # for sync
+            await delete_chat_admins(session=session, chat_id=chat_id)

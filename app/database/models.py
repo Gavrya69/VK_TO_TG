@@ -43,3 +43,15 @@ class Binding(Base):
     __table_args__ = (
         UniqueConstraint("vk_group_id", "telegram_chat_id", "telegram_thread_id"),
     )
+
+
+class ChatAdmins(Base):
+    __tablename__ = "chat_admins"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    
+    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    is_creator: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
