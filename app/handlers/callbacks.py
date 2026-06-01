@@ -98,27 +98,45 @@ async def process_group(message: Message, state: FSMContext):
     await state.clear()
     
     
-@router.callback_query(F.data.startswith("del_group:"))
+@router.callback_query(F.data == "del_group")
 async def delete_binding_callback(callback: CallbackQuery):
-
-    vk_group_id = int(callback.data.split(":")[1])
     chat_id = callback.message.chat.id
 
     async with SessionLocal() as session:
+        bindings = await get_bindings_by_chat(
+            session=session,
+            telegram_chat_id=chat_id,
+        )
+    
+    if bindings:
+        await callback.message.edit_text(
+            "Какую группу хотите удалить?",
+            reply_markup=get_delete_menu(bindings)
+        )
+    else:
+        await callback.answer("К этому чату не привязаны группы.")
+    
+    await callback.answer()
+    
+    
+@router.callback_query(F.data.startswith("del_group:"))
+async def delete_binding_callback(callback: CallbackQuery):
+    chat_id = callback.message.chat.id
+    vk_group_id = int(callback.data.split(":")[1])
 
+    async with SessionLocal() as session:
         await delete_binding(
             session=session,
             vk_group_id=vk_group_id,
             telegram_chat_id=chat_id,
         )
-
         bindings = await get_bindings_by_chat(
             session=session,
             telegram_chat_id=chat_id,
         )
 
     await callback.message.edit_text(
-        "Обновлённый список:",
+        "Какую группу хотите удалить?",
         reply_markup=get_delete_menu(bindings)
     )
 
