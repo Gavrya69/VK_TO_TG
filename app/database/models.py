@@ -28,5 +28,7 @@ class Subscription(Base):
         primary_key=True
     )
 
-    user_id = mapped_column(Integer)
-    group_id = mapped_column(Integer)
+    user_id: Mapped[int] = mapped_column(Integer)
+    group_id: Mapped[int] = mapped_column(Integer)
+    tg_chat_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    tg_thread_id: Mapped[int] = mapped_column(Integer, nullable=True)

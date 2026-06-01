@@ -1,7 +1,7 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from database.models import Base, Group, Subscription
+from database.models import Base, Subscription
 
 DATABASE_URL = "sqlite+aiosqlite:///data/database.db"
 
