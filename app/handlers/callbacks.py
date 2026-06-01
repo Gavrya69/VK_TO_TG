@@ -1,11 +1,11 @@
 from aiogram import F, Router
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, ChatMemberUpdated
 from aiogram.fsm.context import FSMContext
 
 from handlers.menu import get_main_menu, get_delete_menu, get_back_button
 from handlers.states import GroupControl
 from services.subscriptions import add_vk_group, delete_subscription
-from database.db import SessionLocal, get_subscriptions
+from database.db import SessionLocal, get_subscriptions, add_target, get_target
 
 router = Router()
 
@@ -112,3 +112,34 @@ async def delete_subscription_callback(
         reply_markup=get_delete_menu(subscriptions)
     )
     await callback.answer("Подписка удалена")
+
+
+@router.my_chat_member()
+async def bot_added(event: ChatMemberUpdated):
+
+    old_status = event.old_chat_member.status
+    new_status = event.new_chat_member.status
+
+    if old_status in (
+        "left",
+        "kicked"
+    ) and new_status in (
+        "member",
+        "administrator"
+    ):
+
+        async with SessionLocal() as session:
+            target = await get_target(
+                session=session,
+                chat_id=event.chat.id
+            )
+            if target:
+                return
+
+            await add_target(
+                session=session,
+                owner_id=event.from_user.id,
+                chat_id=event.chat.id,
+                title=event.chat.title,
+                chat_type=event.chat.type,
+            )

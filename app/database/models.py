@@ -32,3 +32,14 @@ class Subscription(Base):
     group_id: Mapped[int] = mapped_column(Integer)
     tg_chat_id: Mapped[int] = mapped_column(Integer, nullable=True)
     tg_thread_id: Mapped[int] = mapped_column(Integer, nullable=True)
+
+
+class TelegramTarget(Base):
+    __tablename__ = "telegram_targets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    owner_id: Mapped[int]
+    chat_id: Mapped[int]
+    title: Mapped[str]
+    chat_type: Mapped[str]

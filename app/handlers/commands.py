@@ -17,6 +17,7 @@ async def cmd_start(message: Message):
         reply_markup=get_main_menu()
     )
 
+
 @router.message(Command("help"))
 async def cmd_help(message: Message):
     await message.answer(
@@ -24,5 +25,8 @@ async def cmd_help(message: Message):
         "/start - Запуск бота\n"
         "/help - Показать доступные команды"
     )
-    
-    
+
+
+# @router.message(Command("connect")):
+# async def cmd_connect(message: Message):
+#     pass

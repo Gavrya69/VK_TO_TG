@@ -1,7 +1,7 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from database.models import Base, Subscription
+from database.models import Base, Subscription, TelegramTarget
 
 DATABASE_URL = "sqlite+aiosqlite:///data/database.db"
 
@@ -36,7 +36,6 @@ async def add_subscription(
 
     return subscription
 
-
 async def check_subscription(
     session: AsyncSession,
     group_id: int,
@@ -51,7 +50,6 @@ async def check_subscription(
     
     return result.scalar_one_or_none()
 
-
 async def get_subscriptions(
     session: AsyncSession,
     user_id: int
@@ -64,7 +62,6 @@ async def get_subscriptions(
 
     return result.scalars().all()
 
-
 async def delete_subscription(
     session: AsyncSession,
     user_id: int,
@@ -74,6 +71,53 @@ async def delete_subscription(
         delete(Subscription).where(
             Subscription.user_id == user_id,
             Subscription.group_id == group_id,
+        )
+    )
+
+    await session.commit()
+
+
+async def add_target(
+    session: AsyncSession,
+    owner_id: int,
+    chat_id: int,
+    title: str,
+    chat_type: str,
+):
+    target = TelegramTarget(
+        owner_id=owner_id,
+        chat_id=chat_id,
+        title=title,
+        chat_type=chat_type,
+    )
+
+    session.add(target)
+
+    await session.commit()
+
+    return target
+
+async def get_target(
+    session: AsyncSession,
+    chat_id: int,
+):
+    query = select(TelegramTarget).where(
+        TelegramTarget.chat_id == chat_id
+    )
+
+    result = await session.execute(query)
+
+    return result.scalar_one_or_none()
+
+async def delete_target(
+    session: AsyncSession,
+    owner_id: int,
+    chat_id: int,
+):
+    await session.execute(
+        delete(TelegramTarget).where(
+            TelegramTarget.owner_id == owner_id,
+            TelegramTarget.chat_id == chat_id,
         )
     )
 
