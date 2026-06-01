@@ -26,7 +26,7 @@ router = Router()
 @router.callback_query(F.data == "info")
 async def handle_info_callback(callback: CallbackQuery):
     await callback.message.edit_text(
-        "VK → TG бот. Перенос постов из VK в Telegram.",
+        "Перенос постов из VK групп в Telegram каналы и чаты.",
         reply_markup=get_back_button()
     )
     await callback.answer()

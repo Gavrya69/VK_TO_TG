@@ -2,8 +2,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 def get_main_menu():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="➕ Добавить группу", callback_data="add_group")],
-        [InlineKeyboardButton(text="🗑️ Удалить группу", callback_data="del_group")],
+        [InlineKeyboardButton(text="👤 Этот чат", callback_data="my_group")],
+        [InlineKeyboardButton(text="📋 Группы и каналы", callback_data="del_group")],
         [InlineKeyboardButton(text="ℹ️ Информация", callback_data="info")],
         [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")]
     ])

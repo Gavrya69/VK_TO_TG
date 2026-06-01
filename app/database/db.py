@@ -105,6 +105,7 @@ async def add_binding(
     
     return binding
 
+
 async def get_binding(
     session: AsyncSession, 
     vk_group_id: int,
@@ -117,6 +118,7 @@ async def get_binding(
     )
     
     return result.scalar_one_or_none()
+
 
 async def get_bindings_by_group(
     session: AsyncSession,
