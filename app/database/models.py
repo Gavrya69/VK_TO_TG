@@ -25,8 +25,8 @@ class Group(Base):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     
-    group_id = Mapped[int] = mapped_column(Integer)
-    name = Mapped[str] = mapped_column(String)
+    group_id: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String)
     
     
 class Subscription(Base):
