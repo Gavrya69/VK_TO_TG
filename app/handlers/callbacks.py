@@ -4,8 +4,17 @@ from aiogram.fsm.context import FSMContext
 
 from handlers.menu import get_main_menu, get_delete_menu, get_back_button
 from handlers.states import GroupControl
-from services.subscriptions import add_vk_group, delete_subscription
-from database.db import SessionLocal, get_subscriptions, add_target, get_target
+
+from database.db import (
+    SessionLocal,
+    add_group,
+    get_group,
+    add_binding,
+    get_bindings_by_chat,
+    delete_binding,
+    add_chat,
+    get_chat,
+)
 
 router = Router()
 
@@ -13,129 +22,169 @@ router = Router()
 @router.callback_query(F.data == "info")
 async def handle_info_callback(callback: CallbackQuery):
     await callback.message.edit_text(
-        "Тут инфа про бота",
+        "VK → TG бот. Перенос постов из VK в Telegram.",
         reply_markup=get_back_button()
     )
     await callback.answer()
-    
+
+
 @router.callback_query(F.data == "main_menu")
-async def handle_info_callback(callback: CallbackQuery, state: FSMContext):
+async def main_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
+
     await callback.message.edit_text(
         "Главное меню:",
         reply_markup=get_main_menu()
     )
-    
+
     await callback.answer()
+    
+    
     
     
 @router.callback_query(F.data == "add_group")
 async def add_group_callback(callback: CallbackQuery, state: FSMContext):
     await state.set_state(GroupControl.waiting_for_add)
+
     await callback.message.edit_text(
-        "Отправь ссылку на VK группу",
+        "Отправь VK ссылку (например vk.com/habr)",
         reply_markup=get_back_button()
     )
-    
-    await callback.answer()
 
+    await callback.answer()
+    
+    
 @router.message(GroupControl.waiting_for_add)
 async def process_group(message: Message, state: FSMContext):
     link = message.text
-    user_id = message.from_user.id
-    
+    chat_id = message.chat.id
+
     async with SessionLocal() as session:
-        result = await add_vk_group(session=session, link=link, user_id=user_id)
-        
-    if result == "unfound":
-        await message.answer(
-            f"По данной ссылке не найдено группы.",
-            reply_markup=get_main_menu()
+        chat = await get_chat(session, chat_id)
+
+        if not chat:
+            chat = await add_chat(
+                session=session,
+                chat_id=chat_id,
+                title=message.chat.title or "private",
+                chat_type=message.chat.type,
+            )
+            
+        group = await get_group(session, vk_group_id=link)
+
+        if not group:
+            group = await add_group(
+                session=session,
+                vk_group_id=link,
+                name=link,
+            )
+            
+        await add_binding(
+            session=session,
+            vk_group_id=group.vk_group_id,
+            telegram_chat_id=chat.telegram_chat_id,
         )
-    elif result == "closed":
-        await message.answer(
-            f"Данная группа является закрытой.",
-            reply_markup=get_main_menu()
-        )
-    elif result == "subscribed":        
-        await message.answer(
-            f"Ты уже подписан на эту группу.",
-            reply_markup=get_main_menu()
-        )
-    elif result == "ok":
-        await message.answer(
-            f"Ты успешно подписался на данную группу.",
-            reply_markup=get_main_menu()
-        )
-        
+
+    await message.answer(
+        "Привязка создана.",
+        reply_markup=get_main_menu()
+    )
+
     await state.clear()
-        
     
-@router.callback_query(F.data == "del_group")
-async def add_group_callback(callback: CallbackQuery, state: FSMContext):
+    
+@router.message(GroupControl.waiting_for_add)
+async def process_group(message: Message, state: FSMContext):
+    link = message.text
+    chat_id = message.chat.id
 
     async with SessionLocal() as session:
-        subscriptions = await get_subscriptions(
-            session=session,
-            user_id=callback.from_user.id
-        )    
-    if subscriptions:
-        await callback.message.edit_text(
-            "Выбери группу:",
-            reply_markup=get_delete_menu(subscriptions)
-        )
-        await callback.answer()
-    else:        
-        await callback.answer("У тебя нет групп")
 
+        # 1. получаем или создаём чат
+        chat = await get_chat(session, chat_id)
+
+        if not chat:
+            chat = await add_chat(
+                session=session,
+                chat_id=chat_id,
+                title=message.chat.title or "private",
+                chat_type=message.chat.type,
+            )
+
+        # 2. создаём VK группу (упрощённо — пока без API резолва)
+        group = await get_group(session, vk_group_id=link)
+
+        if not group:
+            group = await add_group(
+                session=session,
+                vk_group_id=link,
+                name=link,
+            )
+
+        # 3. создаём binding
+        await add_binding(
+            session=session,
+            vk_group_id=group.vk_group_id,
+            telegram_chat_id=chat.telegram_chat_id,
+        )
+
+    await message.answer(
+        "Привязка создана.",
+        reply_markup=get_main_menu()
+    )
+
+    await state.clear()
+    
+    
 @router.callback_query(F.data.startswith("del_group:"))
-async def delete_subscription_callback(callback: CallbackQuery):
-    group_id = int(callback.data.split(":")[1])
+async def delete_binding_callback(callback: CallbackQuery):
+
+    vk_group_id = int(callback.data.split(":")[1])
+    chat_id = callback.message.chat.id
 
     async with SessionLocal() as session:
-        await delete_subscription(
+
+        await delete_binding(
             session=session,
-            user_id=callback.from_user.id,
-            group_id=group_id
+            vk_group_id=vk_group_id,
+            telegram_chat_id=chat_id,
         )
-        subscriptions = await get_subscriptions(
+
+        bindings = await get_bindings_by_chat(
             session=session,
-            user_id=callback.from_user.id
-        )   
+            telegram_chat_id=chat_id,
+        )
 
     await callback.message.edit_text(
-        "Выбери группу:",
-        reply_markup=get_delete_menu(subscriptions)
+        "Обновлённый список:",
+        reply_markup=get_delete_menu(bindings)
     )
-    await callback.answer("Подписка удалена")
 
-
+    await callback.answer("Удалено")
+    
+    
+    
 @router.my_chat_member()
 async def bot_added(event: ChatMemberUpdated):
 
-    old_status = event.old_chat_member.status
-    new_status = event.new_chat_member.status
+    old = event.old_chat_member.status
+    new = event.new_chat_member.status
 
-    if old_status in (
-        "left",
-        "kicked"
-    ) and new_status in (
-        "member",
-        "administrator"
-    ):
+    if old in ("left", "kicked") and new in ("member", "administrator"):
 
         async with SessionLocal() as session:
-            target = await get_target(
+
+            chat = await get_chat(
                 session=session,
                 chat_id=event.chat.id
             )
-            if target:
+
+            if chat:
                 return
 
-            await add_target(
+            await add_chat(
                 session=session,
-                owner_id=event.from_user.id,
                 chat_id=event.chat.id,
-                title=event.chat.title,
+                title=event.chat.title or "unknown",
                 chat_type=event.chat.type,
             )

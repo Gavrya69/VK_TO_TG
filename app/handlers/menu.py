@@ -9,17 +9,23 @@ def get_main_menu():
     return keyboard
 
 
-def get_delete_menu(subscriptions):
+def get_delete_menu(bindings):
     keyboard = []
-    
-    for sub in subscriptions:
+
+    for b in bindings:
         keyboard.append([
             InlineKeyboardButton(
-                text=f"Группа {sub.group_id}",
-                callback_data=f"del_group:{sub.group_id}"
+                text=f"VK {b.vk_group_id}",
+                callback_data=f"del_group:{b.vk_group_id}"
             )
         ])
-    keyboard.append([InlineKeyboardButton(text="Назад", callback_data="main_menu")])
+
+    keyboard.append([
+        InlineKeyboardButton(
+            text="Назад",
+            callback_data="main_menu"
+        )
+    ])
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 

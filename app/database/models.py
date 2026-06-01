@@ -1,51 +1,45 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, BigInteger, String, Boolean
+from sqlalchemy import DateTime, Integer, BigInteger, String, Boolean, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
     pass
 
-
-class User(Base):
-    __tablename__ = "users"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    telegram_id: Mapped[int] = mapped_column(Integer, unique=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow
-    )
-    
     
 class Group(Base):
     __tablename__ = "groups"
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     
-    group_id: Mapped[int] = mapped_column(Integer)
+    vk_group_id: Mapped[int] = mapped_column(Integer)
     name: Mapped[str] = mapped_column(String)
+    url: Mapped[str | None] = mapped_column(String, nullable=True)
+    last_post_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
     
-class Subscription(Base):
-    __tablename__ = "subscriptions"
+class Chat(Base):
+    __tablename__ = "chat"
 
-    id = mapped_column(Integer,primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
-    user_id: Mapped[int] = mapped_column(Integer)
-    group_id: Mapped[int] = mapped_column(Integer)
-    tg_chat_id: Mapped[int] = mapped_column(Integer, nullable=True)
-    tg_thread_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    telegram_chat_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    title: Mapped[str | None] = mapped_column(String, nullable=True)
+    chat_type: Mapped[str] = mapped_column(String)
 
 
-class TelegramTarget(Base):
-    __tablename__ = "telegram_targets"
+class Binding(Base):
+    __tablename__ = "bindings"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
-    owner_id: Mapped[int]
-    chat_id: Mapped[int]
-    title: Mapped[str]
-    chat_type: Mapped[str]
+    vk_group_id: Mapped[int] = mapped_column(Integer, index=True)
+    telegram_chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    telegram_thread_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("vk_group_id", "telegram_chat_id", "telegram_thread_id"),
+    )

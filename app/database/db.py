@@ -1,7 +1,7 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from database.models import Base, User, Subscription, TelegramTarget
+from database.models import Base, Group, Chat, Binding
 
 DATABASE_URL = "sqlite+aiosqlite:///data/database.db"
 
@@ -21,132 +21,113 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
 
 
-async def add_user(
-    session: AsyncSession,
-    user_id: int
+async def add_group(
+    session: AsyncSession, 
+    vk_group_id: int, 
+    name: str
 ):
-    user = User(
-        telegram_id=user_id
+    group = Group(
+        vk_group_id=vk_group_id,
+        name=name,
     )
-    
-    session.add(user)
+
+    session.add(group)
     await session.commit()
     
-    return user
+    return group
 
-async def check_user(
-    session: AsyncSession,
-    user_id: int
+
+async def get_group(
+    session: AsyncSession, 
+    vk_group_id: int
 ):
-    query = select(User).where(
-        User.telegram_id == user_id
+    result = await session.execute(
+        select(Group).where(Group.vk_group_id == vk_group_id)
     )
-
-    result = await session.execute(query)
     
     return result.scalar_one_or_none()
 
 
-async def add_subscription(
+async def add_chat(
     session: AsyncSession,
-    user_id: int,
-    group_id: int,
-):
-    subscription = Subscription(
-        user_id=user_id,
-        group_id=group_id,
-    )
-
-    session.add(subscription)
-    await session.commit()
-
-    return subscription
-
-async def check_subscription(
-    session: AsyncSession,
-    group_id: int,
-    user_id: int
-):    
-    query = select(Subscription).where(
-        Subscription.group_id == group_id,
-        Subscription.user_id == user_id
-    )
-
-    result = await session.execute(query)
-    
-    return result.scalar_one_or_none()
-
-async def get_subscriptions(
-    session: AsyncSession,
-    user_id: int
-):
-    query = select(Subscription).where(
-        Subscription.user_id == user_id
-    )
-    
-    result = await session.execute(query)
-
-    return result.scalars().all()
-
-async def delete_subscription(
-    session: AsyncSession,
-    user_id: int,
-    group_id: int,
-):
-    await session.execute(
-        delete(Subscription).where(
-            Subscription.user_id == user_id,
-            Subscription.group_id == group_id,
-        )
-    )
-
-    await session.commit()
-
-
-async def add_target(
-    session: AsyncSession,
-    owner_id: int,
     chat_id: int,
     title: str,
     chat_type: str,
 ):
-    target = TelegramTarget(
-        owner_id=owner_id,
-        chat_id=chat_id,
+    chat = Chat(
+        telegram_chat_id=chat_id,
         title=title,
         chat_type=chat_type,
     )
 
-    session.add(target)
-
+    session.add(chat)
     await session.commit()
+    
+    return chat
 
-    return target
 
-async def get_target(
-    session: AsyncSession,
-    chat_id: int,
+async def get_chat(
+    session: AsyncSession, 
+    chat_id: int
 ):
-    query = select(TelegramTarget).where(
-        TelegramTarget.chat_id == chat_id
+    result = await session.execute(
+        select(Chat).where(Chat.telegram_chat_id == chat_id)
     )
-
-    result = await session.execute(query)
-
+    
     return result.scalar_one_or_none()
 
-async def delete_target(
+
+async def add_binding(
     session: AsyncSession,
-    owner_id: int,
-    chat_id: int,
+    vk_group_id: int,
+    telegram_chat_id: int,
+    telegram_thread_id: int | None = None,
 ):
-    await session.execute(
-        delete(TelegramTarget).where(
-            TelegramTarget.owner_id == owner_id,
-            TelegramTarget.chat_id == chat_id,
-        )
+    binding = Binding(
+        vk_group_id=vk_group_id,
+        telegram_chat_id=telegram_chat_id,
+        telegram_thread_id=telegram_thread_id,
     )
 
+    session.add(binding)
+    await session.commit()
+    
+    return binding
+
+
+async def get_bindings_by_group(
+    session: AsyncSession,
+    vk_group_id: int,
+):
+    result = await session.execute(
+        select(Binding).where(Binding.vk_group_id == vk_group_id)
+    )
+    
+    return result.scalars().all()
+
+
+async def get_bindings_by_chat(
+    session: AsyncSession,
+    telegram_chat_id: int,
+):
+    result = await session.execute(
+        select(Binding).where(Binding.telegram_chat_id == telegram_chat_id)
+    )
+    
+    return result.scalars().all()
+
+
+async def delete_binding(
+    session: AsyncSession,
+    vk_group_id: int,
+    telegram_chat_id: int,
+):
+    await session.execute(
+        delete(Binding).where(
+            Binding.vk_group_id == vk_group_id,
+            Binding.telegram_chat_id == telegram_chat_id,
+        )
+    )
     await session.commit()
 
 

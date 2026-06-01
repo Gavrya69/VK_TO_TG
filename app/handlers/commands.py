@@ -1,32 +1,17 @@
 from aiogram import Router
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
 from handlers.menu import get_main_menu
-from database.db import SessionLocal, add_user, check_user
 
 router = Router()
 
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    
-    async with SessionLocal() as session:
-        user_exist = await check_user(
-            session=session,
-            user_id=message.from_user.id
-        )
-        if not user_exist:
-            await add_user(
-                session=session,
-                user_id=message.from_user.id
-            )
-            await message.answer(
-                "Даров, я кароче парсить буду вк."
-            )
-        
+
     await message.answer(
-        "Главное меню:\n",
+        "VK → TG бот. Добавь бота в чат и настрой источники через меню.",
         reply_markup=get_main_menu()
     )
 
@@ -35,11 +20,7 @@ async def cmd_start(message: Message):
 async def cmd_help(message: Message):
     await message.answer(
         "Доступные команды:\n"
-        "/start - Запуск бота\n"
-        "/help - Показать доступные команды"
+        "/start - запуск\n"
+        "/help - помощь\n\n"
+        "Управление происходит через меню."
     )
-
-
-# @router.message(Command("connect")):
-# async def cmd_connect(message: Message):
-#     pass
