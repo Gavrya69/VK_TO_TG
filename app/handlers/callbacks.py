@@ -70,10 +70,10 @@ async def back_callback(callback: CallbackQuery, state: FSMContext):
         await main_menu(callback, state)
         
     elif target == "this_chat":
-        await this_chat_menu(callback, state)
+        await chat_menu(callback, state)
         
     elif target == "my_groups":
-        pass
+        my_chats_menu(callback, state)
         
     await callback.answer()
 
@@ -88,7 +88,7 @@ async def close(callback: CallbackQuery, state: FSMContext):
     
     
 @router.callback_query(F.data.startswith("chat_menu:"))
-async def this_chat_menu(callback: CallbackQuery, state: FSMContext):
+async def chat_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     chat_id = int(callback.data.split(":")[1])
 
@@ -129,7 +129,7 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     
 @router.callback_query(F.data.startswith("add_binding:"))
-async def add_group_callback(callback: CallbackQuery, state: FSMContext):
+async def add_binding_callback(callback: CallbackQuery, state: FSMContext):
     chat_id = int(callback.data.split(":")[1])
     
     await state.set_state(GroupControl.waiting_for_add)
@@ -144,7 +144,7 @@ async def add_group_callback(callback: CallbackQuery, state: FSMContext):
     
     
 @router.message(GroupControl.waiting_for_add)
-async def process_group(message: Message, state: FSMContext):
+async def process_binding(message: Message, state: FSMContext):
     data = await state.get_data()
     chat_id = data["target_chat_id"]
     link = int(message.text)
@@ -266,7 +266,6 @@ async def delete_binding_callback(callback: CallbackQuery):
         )
 
     await callback.answer("Удалено")
-    
 
     
 @router.my_chat_member()
