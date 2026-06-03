@@ -1,19 +1,19 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-def get_private_main_menu():
+def get_private_main_menu(chat_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="👤 Этот чат", callback_data="this_chat")],
+            [InlineKeyboardButton(text="👤 Этот чат", callback_data=f"chat_menu:{chat_id}")],
             [InlineKeyboardButton(text="📋 Группы и каналы", callback_data="my_chats")],
             [InlineKeyboardButton(text="ℹ️ Информация", callback_data="info")],
             [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")],
         ]
     )
 
-def get_chat_main_menu():
+def get_public_main_menu(chat_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="👤 Этот чат", callback_data="this_chat")],
+            [InlineKeyboardButton(text="👤 Этот чат", callback_data=f"chat_menu:{chat_id}")],
             [InlineKeyboardButton(text="ℹ️ Информация", callback_data="info")],
             [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")],
         ]
@@ -26,11 +26,11 @@ def get_back_button(target: str):
         ]
     )
 
-def get_this_chat_menu():
+def get_chat_menu(chat_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="➕ Добавить VK группу", callback_data="add_group")],
-            [InlineKeyboardButton(text="🗑️ Удалить VK группу", callback_data="del_group")],
+            [InlineKeyboardButton(text="➕ Добавить VK группу", callback_data=f"add_binding:{chat_id}")],
+            [InlineKeyboardButton(text="🗑️ Удалить VK группу", callback_data=f"del_binding_menu:{chat_id}")],
             [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_menu")],
         ]
     )
@@ -38,12 +38,12 @@ def get_this_chat_menu():
 
 def get_my_chats_menu(chats: list=[]):
     keyboard = []
-    
     for c in chats:
+        print(c.telegram_chat_id)
         keyboard.append([
             InlineKeyboardButton(
                 text=f"TG {c.title}",
-                callback_data=f"settings:{c.telegram_chat_id}"
+                callback_data=f"chat_menu:{c.telegram_chat_id}"
             )
         ])
         
@@ -57,14 +57,14 @@ def get_my_chats_menu(chats: list=[]):
 
 
 
-def get_delete_menu(bindings: list=[], back_button: bool=True):
+def get_delete_menu(chat_id: int, bindings: list = [], back_button: bool=True):
     keyboard = []
     
     for b in bindings:
         keyboard.append([
             InlineKeyboardButton(
                 text=f"VK {b.vk_group_id}",
-                callback_data=f"del_group_menu:{b.vk_group_id}"
+                callback_data=f"del_binding:{chat_id}:{b.vk_group_id}"
             )
         ])
         

@@ -5,9 +5,9 @@ from aiogram.fsm.context import FSMContext
 
 from handlers.menu import (
     get_private_main_menu,
-    get_chat_main_menu,
+    get_public_main_menu,
+    get_chat_menu,
     get_back_button,
-    get_this_chat_menu,
     get_my_chats_menu,
     get_delete_menu,
     get_close_button
@@ -46,10 +46,12 @@ async def handle_info_callback(callback: CallbackQuery):
 @router.callback_query(F.data == "main_menu")
 async def main_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
+    chat_id = callback.message.chat.id
+    
     if callback.message.chat.type == "private":
-        markup = get_private_main_menu()
+        markup = get_private_main_menu(chat_id)
     else:
-        markup = get_chat_main_menu()
+        markup = get_public_main_menu(chat_id)
         
     await callback.message.edit_text(
         "Главное меню:",
@@ -57,6 +59,7 @@ async def main_menu(callback: CallbackQuery, state: FSMContext):
     )
 
     await callback.answer()
+
 
 @router.callback_query(F.data.startswith("back:"))
 async def back_callback(callback: CallbackQuery, state: FSMContext):
@@ -84,10 +87,10 @@ async def close(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     
     
-@router.callback_query(F.data == "this_chat")
+@router.callback_query(F.data.startswith("chat_menu:"))
 async def this_chat_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
-    chat_id = callback.message.chat.id
+    chat_id = int(callback.data.split(":")[1])
 
     async with SessionLocal() as session:
         bindings = await get_bindings_by_chat(
@@ -97,7 +100,7 @@ async def this_chat_menu(callback: CallbackQuery, state: FSMContext):
     # print(gid.vk_group_id for gid in bindings])
     await callback.message.edit_text(
         f"Групп привязано к этому чату: {len(bindings)}.",
-        reply_markup=get_this_chat_menu()
+        reply_markup=get_chat_menu(chat_id)
     )
     
     await callback.answer()
@@ -113,12 +116,11 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
             session=session,
             user_id=user_id,
         )
-        print(chats)
         chat_ids = [c.chat_id for c in chats]
         chats = await get_chats(
             session=session,
             chat_ids=chat_ids)
-        print(chats)
+        
     await callback.message.edit_text(
         f"Ваши каналы: {len(chats)}.",
         reply_markup=get_my_chats_menu(chats)
@@ -126,9 +128,12 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
     
     await callback.answer()
     
-@router.callback_query(F.data == "add_group")
+@router.callback_query(F.data.startswith("add_binding:"))
 async def add_group_callback(callback: CallbackQuery, state: FSMContext):
+    chat_id = int(callback.data.split(":")[1])
+    
     await state.set_state(GroupControl.waiting_for_add)
+    await state.update_data(target_chat_id=chat_id)
 
     await callback.message.edit_text(
         "Отправь VK ссылку (например vk.com/habr)",
@@ -140,8 +145,9 @@ async def add_group_callback(callback: CallbackQuery, state: FSMContext):
     
 @router.message(GroupControl.waiting_for_add)
 async def process_group(message: Message, state: FSMContext):
+    data = await state.get_data()
+    chat_id = data["target_chat_id"]
     link = int(message.text)
-    chat_id = message.chat.id
     
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
@@ -181,9 +187,9 @@ async def process_group(message: Message, state: FSMContext):
     await state.clear()
     
     
-@router.callback_query(F.data == "del_group")
+@router.callback_query(F.data.startswith("del_binding_menu:"))
 async def delete_binding_callback(callback: CallbackQuery):
-    chat_id = callback.message.chat.id
+    chat_id = int(callback.data.split(":")[1])
 
     async with SessionLocal() as session:
         bindings = await get_bindings_by_chat(
@@ -194,7 +200,7 @@ async def delete_binding_callback(callback: CallbackQuery):
     if bindings:
         await callback.message.edit_text(
             "Какую группу хотите удалить?",
-            reply_markup=get_delete_menu(bindings)
+            reply_markup=get_delete_menu(chat_id, bindings)
         )
     else:
         await callback.answer("К этому чату не привязаны группы.")
@@ -202,10 +208,10 @@ async def delete_binding_callback(callback: CallbackQuery):
     await callback.answer()
     
     
-@router.callback_query(F.data.startswith("del_group_menu:"))
+@router.callback_query(F.data.startswith("del_binding:"))
 async def delete_binding_callback(callback: CallbackQuery):
-    chat_id = callback.message.chat.id
-    vk_group_id = int(callback.data.split(":")[1])
+    chat_id = int(callback.data.split(":")[1])
+    vk_group_id = int(callback.data.split(":")[2])
 
     async with SessionLocal() as session:
         await delete_binding(
@@ -221,12 +227,12 @@ async def delete_binding_callback(callback: CallbackQuery):
     if bindings:
         await callback.message.edit_text(
             "Какую группу хотите удалить?",
-            reply_markup=get_delete_menu(bindings, back_button=True)
+            reply_markup=get_delete_menu(chat_id, bindings)
         )
     else:
         await callback.message.edit_text(
             "Здесь нет групп.",
-            reply_markup=get_delete_menu(bindings, back_button=True)
+            reply_markup=get_delete_menu(chat_id, bindings)
         )
 
     await callback.answer("Удалено")
@@ -251,12 +257,12 @@ async def delete_binding_callback(callback: CallbackQuery):
     if bindings:
         await callback.message.edit_text(
             "Какую группу хотите удалить?",
-            reply_markup=get_delete_menu(bindings, back_button=False)
+            reply_markup=get_delete_menu(chat_id, bindings, False)
         )
     else:
         await callback.message.edit_text(
             "Здесь нет групп.",
-            reply_markup=get_delete_menu(bindings, back_button=False)
+            reply_markup=get_delete_menu(chat_id, bindings, False)
         )
 
     await callback.answer("Удалено")

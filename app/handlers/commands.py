@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
-from handlers.menu import get_private_main_menu, get_chat_main_menu, get_delete_menu, get_close_button
+from handlers.menu import get_private_main_menu, get_public_main_menu, get_delete_menu, get_close_button
 from database.db import (
     SessionLocal,
     add_group,
@@ -22,10 +22,12 @@ router = Router()
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
+    chat_id = message.chat.id
+    
     if message.chat.type == "private":
-        markup = get_private_main_menu()
+        markup = get_private_main_menu(chat_id)
     else:
-        markup = get_chat_main_menu()
+        markup = get_public_main_menu(chat_id)
         
     await message.answer(
         "Главное меню:",
