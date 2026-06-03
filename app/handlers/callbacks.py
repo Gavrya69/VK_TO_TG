@@ -3,15 +3,15 @@ from aiogram import F, Router
 from aiogram.types import CallbackQuery, Message, ChatMemberUpdated
 from aiogram.fsm.context import FSMContext
 
-from handlers.menu import (
+from keyboards.menu import (
     get_private_main_menu,
     get_public_main_menu,
     get_chat_menu,
-    get_back_button,
     get_my_chats_menu,
     get_delete_menu,
-    get_close_button
 )
+
+from keyboards.buttons import get_back_button
 
 from handlers.states import GroupControl
 from services import sync_chat_admins  
