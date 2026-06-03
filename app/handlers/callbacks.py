@@ -3,7 +3,15 @@ from aiogram import F, Router
 from aiogram.types import CallbackQuery, Message, ChatMemberUpdated
 from aiogram.fsm.context import FSMContext
 
-from handlers.menu import get_main_menu, get_delete_menu, get_back_button
+from handlers.menu import (
+    get_private_main_menu,
+    get_chat_main_menu,
+    get_back_button,
+    get_this_chat_menu,
+    get_delete_menu,
+    get_close_button
+)
+
 from handlers.states import GroupControl
 from services import sync_chat_admins  
 
@@ -27,7 +35,7 @@ router = Router()
 async def handle_info_callback(callback: CallbackQuery):
     await callback.message.edit_text(
         "Перенос постов из VK групп в Telegram каналы и чаты.",
-        reply_markup=get_back_button()
+        reply_markup=get_back_button("main_menu")
     )
     await callback.answer()
 
@@ -35,22 +43,62 @@ async def handle_info_callback(callback: CallbackQuery):
 @router.callback_query(F.data == "main_menu")
 async def main_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
-
+    if callback.message.chat.type == "private":
+        markup = get_private_main_menu()
+    else:
+        markup = get_chat_main_menu()
+        
     await callback.message.edit_text(
         "Главное меню:",
-        reply_markup=get_main_menu()
+        reply_markup=markup
     )
 
     await callback.answer()
 
+@router.callback_query(F.data.startswith("back:"))
+async def back_callback(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    target = callback.data.split(":", 1)[1]
+
+    if target == "main_menu":
+        await main_menu(callback, state)
+        
+    elif target == "this_chat":
+        await this_chat_menu(callback, state)
+        
+    elif target == "my_groups":
+        pass
+        
+    await callback.answer()
+
 
 @router.callback_query(F.data == "close")
-async def main_menu(callback: CallbackQuery, state: FSMContext):
+async def close(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     
     await callback.message.delete()
     
     await callback.answer()
+    
+    
+@router.callback_query(F.data == "this_chat")
+async def this_chat_menu(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    chat_id = callback.message.chat.id
+
+    async with SessionLocal() as session:
+        bindings = await get_bindings_by_chat(
+            session=session,
+            telegram_chat_id=chat_id,
+        )
+    
+    await callback.message.edit_text(
+        f"Групп привязано к этому чату: {len(bindings)}.",
+        reply_markup=get_this_chat_menu()
+    )
+    
+    await callback.answer()
+    
     
     
     
@@ -61,7 +109,7 @@ async def add_group_callback(callback: CallbackQuery, state: FSMContext):
 
     await callback.message.edit_text(
         "Отправь VK ссылку (например vk.com/habr)",
-        reply_markup=get_back_button()
+        reply_markup=get_back_button("this_chat")
     )
 
     await callback.answer()
@@ -99,12 +147,12 @@ async def process_group(message: Message, state: FSMContext):
             )
             await message.answer(
                 "Привязка создана.",
-                reply_markup=get_main_menu()
+                reply_markup=get_back_button("this_chat")
             )
         else:
             await message.answer(
                 "Данная группа уже привязана к этому чату.",
-                reply_markup=get_main_menu()
+                reply_markup=get_back_button("this_chat")
             )
             
     await state.clear()
@@ -150,12 +198,12 @@ async def delete_binding_callback(callback: CallbackQuery):
     if bindings:
         await callback.message.edit_text(
             "Какую группу хотите удалить?",
-            reply_markup=get_delete_menu(bindings, menu_button=True)
+            reply_markup=get_delete_menu(bindings, back_button=True)
         )
     else:
         await callback.message.edit_text(
             "Здесь нет групп.",
-            reply_markup=get_delete_menu(bindings, menu_button=True)
+            reply_markup=get_delete_menu(bindings, back_button=True)
         )
 
     await callback.answer("Удалено")
@@ -180,12 +228,12 @@ async def delete_binding_callback(callback: CallbackQuery):
     if bindings:
         await callback.message.edit_text(
             "Какую группу хотите удалить?",
-            reply_markup=get_delete_menu(bindings, menu_button=False)
+            reply_markup=get_delete_menu(bindings, back_button=False)
         )
     else:
         await callback.message.edit_text(
             "Здесь нет групп.",
-            reply_markup=get_delete_menu(bindings, menu_button=False)
+            reply_markup=get_delete_menu(bindings, back_button=False)
         )
 
     await callback.answer("Удалено")

@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
-from handlers.menu import get_main_menu, get_delete_menu, get_close_button
+from handlers.menu import get_private_main_menu, get_chat_main_menu, get_delete_menu, get_close_button
 from database.db import (
     SessionLocal,
     add_group,
@@ -22,10 +22,14 @@ router = Router()
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-
+    if message.chat.type == "private":
+        markup = get_private_main_menu()
+    else:
+        markup = get_chat_main_menu()
+        
     await message.answer(
-        "VK → TG бот. Добавь бота в чат и настрой источники через меню.",
-        reply_markup=get_main_menu()
+        "Главное меню:",
+        reply_markup=markup
     )
 
 
