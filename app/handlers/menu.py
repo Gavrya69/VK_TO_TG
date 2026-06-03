@@ -19,12 +19,6 @@ def get_public_main_menu(chat_id):
         ]
     )
 
-def get_back_button(target: str):
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="🔙 Назад", callback_data=f"back:{target}")]
-        ]
-    )
 
 def get_chat_menu(chat_id):
     return InlineKeyboardMarkup(
@@ -34,8 +28,7 @@ def get_chat_menu(chat_id):
             [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_menu")],
         ]
     )
-
-
+    
 def get_my_chats_menu(chats: list=[]):
     keyboard = []
     for c in chats:
@@ -45,16 +38,10 @@ def get_my_chats_menu(chats: list=[]):
                 callback_data=f"chat_menu:{c.telegram_chat_id}"
             )
         ])
-        
+    
     append_back_button(keyboard, "main_menu")
     
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
-
-
-
-
-
-
 
 def get_delete_menu(chat_id: int, bindings: list = [], back_button: bool=True):
     keyboard = []
@@ -75,7 +62,12 @@ def get_delete_menu(chat_id: int, bindings: list = [], back_button: bool=True):
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-
+def get_back_button(target: str):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад", callback_data=f"back:{target}")]
+        ]
+    )
 
 def get_close_button():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
