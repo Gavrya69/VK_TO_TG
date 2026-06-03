@@ -83,6 +83,18 @@ async def get_chat(
     
     return result.scalar_one_or_none()
 
+async def get_chats(
+    session: AsyncSession,
+    chat_ids: list[int]
+):
+    if not chat_ids:
+        return []
+
+    result = await session.execute(
+        select(Chat).where(Chat.telegram_chat_id.in_(chat_ids))
+    )
+
+    return result.scalars().all()
 
 # --------------------
 # BINDINGS (VK -> TG)
@@ -142,17 +154,6 @@ async def get_bindings_by_chat(
     return result.scalars().all()
 
 
-async def get_bindings_by_admin(
-    session: AsyncSession,
-    user_id: int,
-):
-    result = await session.execute(
-        select(ChatAdmins).where(ChatAdmins.user_id == user_id)
-    )
-    
-    return result.scalars().all()
-
-
 async def delete_binding(
     session: AsyncSession,
     vk_group_id: int,
@@ -168,7 +169,7 @@ async def delete_binding(
 
 
 # --------------------
-# ADMINS (settings)
+# CHAT ADMINS
 # --------------------
 
 async def add_chat_admin(
@@ -187,6 +188,16 @@ async def add_chat_admin(
     await session.commit()
     
     return admin
+
+async def get_chats_by_admin(
+    session: AsyncSession,
+    user_id: int,
+):
+    result = await session.execute(
+        select(ChatAdmins).where(ChatAdmins.user_id == user_id)
+    )
+    
+    return result.scalars().all()
 
 async def delete_chat_admins(
     session: AsyncSession,

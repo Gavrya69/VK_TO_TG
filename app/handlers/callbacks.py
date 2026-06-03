@@ -8,6 +8,7 @@ from handlers.menu import (
     get_chat_main_menu,
     get_back_button,
     get_this_chat_menu,
+    get_my_chats_menu,
     get_delete_menu,
     get_close_button
 )
@@ -23,8 +24,10 @@ from database.db import (
     get_binding,
     get_bindings_by_chat,
     delete_binding,
+    get_chats,
     delete_chat_admins,
     add_chat,
+    get_chats_by_admin,
     get_chat,
 )
 
@@ -91,7 +94,7 @@ async def this_chat_menu(callback: CallbackQuery, state: FSMContext):
             session=session,
             telegram_chat_id=chat_id,
         )
-    
+    # print(gid.vk_group_id for gid in bindings])
     await callback.message.edit_text(
         f"Групп привязано к этому чату: {len(bindings)}.",
         reply_markup=get_this_chat_menu()
@@ -100,8 +103,28 @@ async def this_chat_menu(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     
     
+@router.callback_query(F.data == "my_chats")
+async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    user_id = callback.from_user.id
+
+    async with SessionLocal() as session:
+        chats = await get_chats_by_admin(
+            session=session,
+            user_id=user_id,
+        )
+        print(chats)
+        chat_ids = [c.chat_id for c in chats]
+        chats = await get_chats(
+            session=session,
+            chat_ids=chat_ids)
+        print(chats)
+    await callback.message.edit_text(
+        f"Ваши каналы: {len(chats)}.",
+        reply_markup=get_my_chats_menu(chats)
+    )
     
-    
+    await callback.answer()
     
 @router.callback_query(F.data == "add_group")
 async def add_group_callback(callback: CallbackQuery, state: FSMContext):
@@ -238,14 +261,26 @@ async def delete_binding_callback(callback: CallbackQuery):
 
     await callback.answer("Удалено")
     
+
     
 @router.my_chat_member()
 async def on_bot_added(event: ChatMemberUpdated, bot):
-    old = event.old_chat_member.status
-    new = event.new_chat_member.status
     chat_id = event.chat.id
     
     async with SessionLocal() as session:
+        chat = await get_chat(session, chat_id)
+
+        if not chat:
+            chat = await add_chat(
+                session=session,
+                chat_id=chat_id,
+                title=event.chat.title or "unknown",
+                chat_type=event.chat.type,
+            )
+            
+        old = event.old_chat_member.status
+        new = event.new_chat_member.status
+    
         if old in ("left", "kicked") and new in ("member", "administrator"):
             await asyncio.sleep(2) # for sync
             await sync_chat_admins(

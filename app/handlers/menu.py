@@ -4,7 +4,7 @@ def get_private_main_menu():
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="👤 Этот чат", callback_data="this_chat")],
-            [InlineKeyboardButton(text="📋 Группы и каналы", callback_data="my_groups")],
+            [InlineKeyboardButton(text="📋 Группы и каналы", callback_data="my_chats")],
             [InlineKeyboardButton(text="ℹ️ Информация", callback_data="info")],
             [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")],
         ]
@@ -36,7 +36,20 @@ def get_this_chat_menu():
     )
 
 
-
+def get_my_chats_menu(chats: list=[]):
+    keyboard = []
+    
+    for c in chats:
+        keyboard.append([
+            InlineKeyboardButton(
+                text=f"TG {c.title}",
+                callback_data=f"settings:{c.telegram_chat_id}"
+            )
+        ])
+        
+    append_back_button(keyboard, "main_menu")
+    
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 
@@ -54,6 +67,7 @@ def get_delete_menu(bindings: list=[], back_button: bool=True):
                 callback_data=f"del_group_menu:{b.vk_group_id}"
             )
         ])
+        
     if back_button:
         append_back_button(keyboard, "this_chat")
     else: 
