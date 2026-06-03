@@ -14,7 +14,7 @@ from keyboards.menu import (
 from keyboards.buttons import get_back_button
 
 from handlers.states import GroupControl
-from services import sync_chat_admins  
+from app.services.tg import sync_chat_admins  
 
 from database.db import (
     SessionLocal,
