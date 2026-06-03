@@ -68,12 +68,8 @@ async def back_callback(callback: CallbackQuery, state: FSMContext):
 
     if target == "main_menu":
         await main_menu(callback, state)
-        
-    elif target == "this_chat":
+    else :
         await chat_menu(callback, state)
-        
-    elif target == "my_groups":
-        my_chats_menu(callback, state)
         
     await callback.answer()
 
@@ -137,7 +133,7 @@ async def add_binding_callback(callback: CallbackQuery, state: FSMContext):
 
     await callback.message.edit_text(
         "Отправь VK ссылку (например vk.com/habr)",
-        reply_markup=get_back_button("this_chat")
+        reply_markup=get_back_button(chat_id)
     )
 
     await callback.answer()
@@ -176,12 +172,12 @@ async def process_binding(message: Message, state: FSMContext):
             )
             await message.answer(
                 "Привязка создана.",
-                reply_markup=get_back_button("this_chat")
+                reply_markup=get_back_button(chat_id)
             )
         else:
             await message.answer(
                 "Данная группа уже привязана к этому чату.",
-                reply_markup=get_back_button("this_chat")
+                reply_markup=get_back_button(chat_id)
             )
             
     await state.clear()

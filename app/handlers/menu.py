@@ -39,7 +39,6 @@ def get_chat_menu(chat_id):
 def get_my_chats_menu(chats: list=[]):
     keyboard = []
     for c in chats:
-        print(c.telegram_chat_id)
         keyboard.append([
             InlineKeyboardButton(
                 text=f"TG {c.title}",
@@ -69,7 +68,7 @@ def get_delete_menu(chat_id: int, bindings: list = [], back_button: bool=True):
         ])
         
     if back_button:
-        append_back_button(keyboard, "this_chat")
+        append_back_button(keyboard, chat_id)
     else: 
         append_close_button(keyboard)
 
