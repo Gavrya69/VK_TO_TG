@@ -38,6 +38,7 @@ class Binding(Base):
     vk_group_id: Mapped[int] = mapped_column(Integer, index=True)
     telegram_chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
     telegram_thread_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_post_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

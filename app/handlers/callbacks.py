@@ -193,7 +193,7 @@ async def process_binding(message: Message, state: FSMContext):
                 chat_type=message.chat.type,
             )
         
-        group = await get_group(session, vk_group_id=link)
+        group = await get_group(session, vk_group_id=vk_group_id)
         if not group:
             group = await add_group(
                 session=session,
