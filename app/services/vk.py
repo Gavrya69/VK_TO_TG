@@ -49,7 +49,7 @@ class VKSession:
     async def get_group_by_link(self, link: str):
         result = await self.request(
             "groups.getById", {
-            "group_id": link
+            "group_id": extract_screen_name(link)
         })
 
         if not result["ok"]:
@@ -134,7 +134,6 @@ async def test():
     async with VKSession(TOKEN, ssl=False) as vk:
 
         info = await vk.get_group_by_link(extract_screen_name(group_link))
-        print(info)
         # print("\nGROUP INFO")
         # print("ID:", info["id"])
         # print("Name:", info["name"])

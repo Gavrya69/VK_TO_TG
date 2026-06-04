@@ -20,10 +20,11 @@ async def startup() -> None:
 
     dp.include_router(commands_router)
     dp.include_router(callbacks_router)
+    await init_db()
     
     # @dp.startup()
     # async def on_startup() -> None:
-    #     await init_db()
+    #     logger.info("Start.")
 
     # @dp.shutdown()
     # async def on_shutdown() -> None:

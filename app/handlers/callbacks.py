@@ -15,7 +15,7 @@ from keyboards.buttons import get_back_button
 from handlers.states import GroupControl
 
 from services.tg import sync_chat_admins
-from services.vk import VKSession, extract_screen_name
+from services.vk import VKSession
 
 from database.db import (
     SessionLocal,
@@ -147,29 +147,29 @@ async def process_binding(message: Message, state: FSMContext):
     link = message.text
     
     async with VKSession() as vk:
-        info = (await vk.check_group_by_link(link))
-        if not info["ok"]:
-            if info["status"] == "not_found":
+        resp = (await vk.check_group_by_link(link))
+        if not resp["ok"]:
+            if resp["status"] == "not_found":
                 await message.answer(
                     "Группа не найдена.",
                     reply_markup=get_back_button(chat_id)
                 )
-            elif info["status"] == "access_denied":
+            elif resp["status"] == "access_denied":
                 await message.answer(
                     "Ошибка доступа к группе.",
                     reply_markup=get_back_button(chat_id)
                 )
-            elif info["status"] == "unknown_error":
+            elif resp["status"] == "unknown_error":
                 await message.answer(
                     "Неизвестая ошибка.",
                     reply_markup=get_back_button(chat_id)
                 )
-            elif info["status"] == "private":
+            elif resp["status"] == "private":
                 await message.answer(
                     "Группа является приватной.",
                     reply_markup=get_back_button(chat_id)
                 )
-            elif info["status"] == "closed":
+            elif resp["status"] == "closed":
                 await message.answer(
                     "Группа является закрытой.",
                     reply_markup=get_back_button(chat_id)
@@ -177,6 +177,7 @@ async def process_binding(message: Message, state: FSMContext):
             await state.clear()
             return
         
+        info = resp["group"]
     
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
@@ -187,7 +188,7 @@ async def process_binding(message: Message, state: FSMContext):
                 title=message.chat.title or "private",
                 chat_type=message.chat.type,
             )
-            
+        
         group = await get_group(session, vk_group_id=link)
         if not group:
             group = await add_group(
@@ -195,7 +196,7 @@ async def process_binding(message: Message, state: FSMContext):
                 vk_group_id=info["id"],
                 name=info["name"],
                 screen_name=info["screen_name"],
-                url=f"https://vk.com/{group['screen_name']}",
+                url=f"https://vk.com/{info['screen_name']}",
             )
         
         binding = await get_binding(session, vk_group_id=link, telegram_chat_id=chat_id)
