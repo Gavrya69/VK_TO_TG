@@ -63,7 +63,7 @@ class VKSession:
         return {"ok": True, "group": data[0]}
 
 
-    async def check_group_by_link(self, link: str):
+    async def get_group_info(self, link: str):
         result = await self.get_group_by_link(link)
 
         if not result["ok"]:
@@ -86,29 +86,7 @@ class VKSession:
             return {"ok": False, "status": "closed", "group": group}
 
         return {"ok": True, "status": "ok", "group": group}
-    
-    
-    async def get_group_info(self, link: str):
-        group = (await self.get_group_by_link(link))
-        
-        group_id = group["id"]
 
-        wall = await self.request("wall.get", {
-            "owner_id": -group_id,
-            "count": 1
-        })
-
-        last_post = None
-        if wall["items"]:
-            last_post = wall["items"][0]["id"]
-
-        return {
-            "id": group_id,
-            "name": group.get("name"),
-            "screen_name": group.get("screen_name"),
-            "last_post_id": last_post,
-            "url": f"https://vk.com/{group.get('screen_name')}"
-        }
 
     async def get_wall(self, group_id: int, count: int = 10):
         return await self.request("wall.get", {

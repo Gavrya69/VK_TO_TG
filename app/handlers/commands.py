@@ -2,17 +2,16 @@ from aiogram import Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
-from keyboards.menu import get_private_main_menu, get_public_main_menu, get_delete_menu
+from services.vk import VKSession
+from keyboards.menu import get_private_main_menu, get_public_main_menu
 from keyboards.buttons import get_close_button
+
 from database.db import (
     SessionLocal,
     add_group,
     get_group,
     add_binding,
     get_binding,
-    get_bindings_by_chat,
-    delete_binding,
-    delete_chat_admins,
     add_chat,
     get_chat,
 )
@@ -46,19 +45,15 @@ async def cmd_help(message: Message):
     )
     
     
-@router.message(Command("add"))
-async def cmd_add_group(message: Message):
+@router.message(Command("parse"))
+async def cmd_addroup(message: Message):
     args = message.text.split(maxsplit=1)
-
-    if len(args) < 2:
-        await message.answer(
-            "Использование:\n/add https://vk.com/group",
-            reply_markup=get_close_button()
-        )
-        return
-    
     link = args[1]
+    walls_count = args[2]
     chat_id = message.chat.id
+    
+    async with VKSession() as vk:
+        resp = (await vk.get_group_info(link))
     
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
@@ -94,26 +89,4 @@ async def cmd_add_group(message: Message):
                 "Данная группа уже привязана к этому чату.",
                 reply_markup=get_close_button()
             )
-    
-    
-@router.message(Command("delete"))
-async def cmd_delete_group(message: Message):
-    chat_id = message.chat.id
-
-    async with SessionLocal() as session:
-        bindings = await get_bindings_by_chat(
-            session=session,
-            telegram_chat_id=chat_id,
-        )
-    
-    if bindings:
-        await message.answer(
-            "Какую группу хотите удалить?",
-            reply_markup=get_delete_menu(bindings, menu_button=False)
-        )
-    else:
-        await message.answer(
-            "Здесь нет групп.",
-            reply_markup=get_close_button()
-        )
     

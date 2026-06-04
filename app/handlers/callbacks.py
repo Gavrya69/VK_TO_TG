@@ -36,7 +36,7 @@ router = Router()
 
     
 @router.callback_query(F.data == "info")
-async def handle_info_callback(callback: CallbackQuery):
+async def info_menu(callback: CallbackQuery):
     await callback.message.edit_text(
         "Перенос постов из VK групп в Telegram каналы и чаты.",
         reply_markup=get_back_button("main_menu")
@@ -63,7 +63,7 @@ async def main_menu(callback: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith("back:"))
-async def back_callback(callback: CallbackQuery, state: FSMContext):
+async def back(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     target = callback.data.split(":", 1)[1]
 
@@ -125,8 +125,9 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
     
     await callback.answer()
     
+    
 @router.callback_query(F.data.startswith("add_binding:"))
-async def add_binding_callback(callback: CallbackQuery, state: FSMContext):
+async def add_binding(callback: CallbackQuery, state: FSMContext):
     chat_id = int(callback.data.split(":")[1])
     
     await state.set_state(GroupControl.waiting_for_add)
@@ -146,42 +147,44 @@ async def process_binding(message: Message, state: FSMContext):
     chat_id = data["target_chat_id"]
     link = message.text
     
+    loading_msg = await message.answer("Подождите, проверяю группу...")
+    
     async with VKSession() as vk:
-        resp = (await vk.check_group_by_link(link))
+        resp = (await vk.get_group_info(link))
         if not resp["ok"]:
             if resp["status"] == "not_found":
-                await message.answer(
+                await loading_msg.edit_text(
                     "Группа не найдена.",
                     reply_markup=get_back_button(chat_id)
                 )
             elif resp["status"] == "access_denied":
-                await message.answer(
+                await loading_msg.edit_text(
                     "Ошибка доступа к группе.",
                     reply_markup=get_back_button(chat_id)
                 )
             elif resp["status"] == "unknown_error":
-                await message.answer(
+                await loading_msg.edit_text(
                     "Неизвестая ошибка.",
                     reply_markup=get_back_button(chat_id)
                 )
             elif resp["status"] == "private":
-                await message.answer(
+                await loading_msg.edit_text(
                     "Группа является приватной.",
                     reply_markup=get_back_button(chat_id)
                 )
             elif resp["status"] == "closed":
-                await message.answer(
+                await loading_msg.edit_text(
                     "Группа является закрытой.",
                     reply_markup=get_back_button(chat_id)
                 )
             await state.clear()
             return
         
-        info = resp["group"]
-        vk_group_id = info["id"]
-        name = info["name"]
-        screen_name = info["screen_name"]
-        url = f"https://vk.com/{info['screen_name']}"
+    info = resp["group"]
+    vk_group_id = info["id"]
+    name = info["name"]
+    screen_name = info["screen_name"]
+    url = f"https://vk.com/{info['screen_name']}"
     
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
@@ -210,12 +213,12 @@ async def process_binding(message: Message, state: FSMContext):
                 vk_group_id=vk_group_id,
                 telegram_chat_id=chat_id,
             )
-            await message.answer(
+            await loading_msg.edit_text(
                 "Привязка создана.",
                 reply_markup=get_back_button(chat_id)
             )
         else:
-            await message.answer(
+            await loading_msg.edit_text(
                 "Данная группа уже привязана к этому чату.",
                 reply_markup=get_back_button(chat_id)
             )
@@ -224,7 +227,7 @@ async def process_binding(message: Message, state: FSMContext):
     
     
 @router.callback_query(F.data.startswith("del_binding_menu:"))
-async def delete_binding_callback(callback: CallbackQuery):
+async def del_binding_menu(callback: CallbackQuery):
     chat_id = int(callback.data.split(":")[1])
 
     async with SessionLocal() as session:
@@ -245,7 +248,7 @@ async def delete_binding_callback(callback: CallbackQuery):
     
     
 @router.callback_query(F.data.startswith("del_binding:"))
-async def delete_binding_callback(callback: CallbackQuery):
+async def del_binding(callback: CallbackQuery):
     chat_id = int(callback.data.split(":")[1])
     vk_group_id = int(callback.data.split(":")[2])
 
@@ -273,36 +276,6 @@ async def delete_binding_callback(callback: CallbackQuery):
 
     await callback.answer("Удалено")
     
-    
-@router.callback_query(F.data.startswith("del_group_chat:"))
-async def delete_binding_callback(callback: CallbackQuery):
-    chat_id = callback.message.chat.id
-    vk_group_id = int(callback.data.split(":")[1])
-
-    async with SessionLocal() as session:
-        await delete_binding(
-            session=session,
-            vk_group_id=vk_group_id,
-            telegram_chat_id=chat_id,
-        )
-        bindings = await get_bindings_by_chat(
-            session=session,
-            telegram_chat_id=chat_id,
-        )
-        
-    if bindings:
-        await callback.message.edit_text(
-            "Какую группу хотите удалить?",
-            reply_markup=get_delete_menu(chat_id, bindings, False)
-        )
-    else:
-        await callback.message.edit_text(
-            "Здесь нет групп.",
-            reply_markup=get_delete_menu(chat_id, bindings, False)
-        )
-
-    await callback.answer("Удалено")
-
     
 @router.my_chat_member()
 async def on_bot_added(event: ChatMemberUpdated, bot):
