@@ -178,6 +178,10 @@ async def process_binding(message: Message, state: FSMContext):
             return
         
         info = resp["group"]
+        vk_group_id = info["id"]
+        name = info["name"]
+        screen_name = info["screen_name"]
+        url = f"https://vk.com/{info['screen_name']}"
     
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
@@ -193,17 +197,17 @@ async def process_binding(message: Message, state: FSMContext):
         if not group:
             group = await add_group(
                 session=session,
-                vk_group_id=info["id"],
-                name=info["name"],
-                screen_name=info["screen_name"],
-                url=f"https://vk.com/{info['screen_name']}",
+                vk_group_id=vk_group_id,
+                name=name,
+                screen_name=screen_name,
+                url=url,
             )
         
-        binding = await get_binding(session, vk_group_id=link, telegram_chat_id=chat_id)
+        binding = await get_binding(session, vk_group_id=vk_group_id, telegram_chat_id=chat_id)
         if not binding:
             await add_binding(
                 session=session,
-                vk_group_id=link,
+                vk_group_id=vk_group_id,
                 telegram_chat_id=chat_id,
             )
             await message.answer(
