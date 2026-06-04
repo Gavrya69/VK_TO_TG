@@ -27,11 +27,15 @@ async def init_db():
 async def add_group(
     session: AsyncSession, 
     vk_group_id: int, 
-    name: str
+    name: str,
+    screen_name: str,
+    url: str,
 ):
     group = Group(
         vk_group_id=vk_group_id,
         name=name,
+        screen_name=screen_name,
+        url=url,
     )
 
     session.add(group)

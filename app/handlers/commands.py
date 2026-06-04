@@ -2,7 +2,8 @@ from aiogram import Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
-from app.keyboards.menu import get_private_main_menu, get_public_main_menu, get_delete_menu, get_close_button
+from keyboards.menu import get_private_main_menu, get_public_main_menu, get_delete_menu
+from keyboards.buttons import get_close_button
 from database.db import (
     SessionLocal,
     add_group,
