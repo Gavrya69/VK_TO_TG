@@ -147,33 +147,34 @@ async def process_binding(message: Message, state: FSMContext):
     chat_id = data["target_chat_id"]
     link = message.text
     
+    # TODO: Сделать перед длительными запросами отправку сообщений с просьбой подождать
     loading_msg = await message.answer("Подождите, проверяю группу...")
     
     async with VKSession() as vk:
         resp = (await vk.get_group_info(link))
         if not resp["ok"]:
             if resp["status"] == "not_found":
-                await loading_msg.edit_text(
+                await message.answer(
                     "Группа не найдена.",
                     reply_markup=get_back_button(chat_id)
                 )
             elif resp["status"] == "access_denied":
-                await loading_msg.edit_text(
+                await message.answer(
                     "Ошибка доступа к группе.",
                     reply_markup=get_back_button(chat_id)
                 )
             elif resp["status"] == "unknown_error":
-                await loading_msg.edit_text(
-                    "Неизвестая ошибка.",
+                await message.answer(
+                    "Неизвестная ошибка.",
                     reply_markup=get_back_button(chat_id)
                 )
             elif resp["status"] == "private":
-                await loading_msg.edit_text(
+                await message.answer(
                     "Группа является приватной.",
                     reply_markup=get_back_button(chat_id)
                 )
             elif resp["status"] == "closed":
-                await loading_msg.edit_text(
+                await message.answer(
                     "Группа является закрытой.",
                     reply_markup=get_back_button(chat_id)
                 )
@@ -185,7 +186,7 @@ async def process_binding(message: Message, state: FSMContext):
     name = info["name"]
     screen_name = info["screen_name"]
     url = f"https://vk.com/{info['screen_name']}"
-    
+
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
         if not chat:
@@ -213,12 +214,12 @@ async def process_binding(message: Message, state: FSMContext):
                 vk_group_id=vk_group_id,
                 telegram_chat_id=chat_id,
             )
-            await loading_msg.edit_text(
+            await message.answer(
                 "Привязка создана.",
                 reply_markup=get_back_button(chat_id)
             )
         else:
-            await loading_msg.edit_text(
+            await message.answer(
                 "Данная группа уже привязана к этому чату.",
                 reply_markup=get_back_button(chat_id)
             )
@@ -279,6 +280,7 @@ async def del_binding(callback: CallbackQuery):
     
 @router.my_chat_member()
 async def on_bot_added(event: ChatMemberUpdated, bot):
+    
     chat_id = event.chat.id
     
     async with SessionLocal() as session:

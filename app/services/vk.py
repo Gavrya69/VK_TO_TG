@@ -26,9 +26,11 @@ class VKSession:
         await self.session.close()
 
 
-    async def request(self, method: str, params: dict={}):
+    async def request(self, method: str, params: dict=None) -> dict:
         url = f"https://api.vk.com/method/{method}"
-
+        
+        if params is None:
+            params = {}
         params.update({
             "access_token": self.token,
             "v": self.api_version
@@ -46,7 +48,7 @@ class VKSession:
             return {"ok": True, "response": data["response"]}
 
 
-    async def get_group_by_link(self, link: str):
+    async def get_group_by_link(self, link: str) -> dict:
         result = await self.request(
             "groups.getById", {
             "group_id": extract_screen_name(link)
@@ -57,13 +59,13 @@ class VKSession:
 
         data = result["response"]
 
-        if isinstance(data, dict) and "groups" in data:
+        if isinstance(data, dict) and "groups" in data: 
             return {"ok": True, "group": data["groups"][0]}
 
         return {"ok": True, "group": data[0]}
 
-
-    async def get_group_info(self, link: str):
+    
+    async def check_group(self, link: str) -> dict: 
         result = await self.get_group_by_link(link)
 
         if not result["ok"]:
@@ -71,28 +73,52 @@ class VKSession:
 
             if code == 100:
                 return {"ok": False, "status": "not_found"}
-            
+
             if code == 15:
                 return {"ok": False, "status": "access_denied"}
-            
+
             return {"ok": False, "status": "unknown_error", "code": code}
 
         group = result["group"]
 
-        if group.get("is_closed") == 2:
+        if group["is_closed"] == 2:
             return {"ok": False, "status": "private", "group": group}
 
-        if group.get("is_closed") == 1:
+        if group["is_closed"] == 1:
             return {"ok": False, "status": "closed", "group": group}
 
-        return {"ok": True, "status": "ok", "group": group}
+        return {"ok": True, "group": group}
+    
+
+    async def get_group_info(self, link: str) -> dict:
+        return await self.check_group(link)
 
 
-    async def get_wall(self, group_id: int, count: int = 10):
+    async def get_group_posts(self, link: str, count: int = 1) -> dict:
+        result = await self.check_group(link)
+
+        if not result["ok"]:
+            return result
+
+        group = result["group"]
+        
         return await self.request("wall.get", {
-            "owner_id": -group_id,
+            "owner_id": -group["id"],
             "count": count
         })
+        
+        
+    async def get_last_post(self, link: str) -> dict:
+        result = await self.get_walls(link, count=3)
+
+        if not result["ok"]:
+            return result
+
+        for post in result["response"]["items"]:
+            if not post.get("is_pinned"):
+                return {"ok": True, "post": post}
+
+        return {"ok": False, "status": "no_posts"}
 
 
 def extract_screen_name(url: str) -> str:
@@ -106,26 +132,18 @@ def extract_screen_name(url: str) -> str:
 
 
 async def test():
-    group_link = "https://vk.com/pso_p1nv"
-    group_link = "https://vk.com/vids_dolboyoba"
+    group_link = "https://vk.com/pso_pnv"
 
     async with VKSession(TOKEN, ssl=False) as vk:
-
-        info = await vk.get_group_by_link(extract_screen_name(group_link))
-        # print("\nGROUP INFO")
-        # print("ID:", info["id"])
-        # print("Name:", info["name"])
-        # print("URL:", info["url"])
-        # print("Last post ID:", info["last_post_id"])
-
-        # wall = await vk.get_wall(info["id"], count=3)
-
-        # print("\nLATEST POSTS")
-
-        # for post in wall["items"]:
-        #     print("\n---")
-        #     print("Post ID:", post["id"])
-        #     print("Text:", post.get("text", "(empty)"))
+        
+        info = await vk.get_group_info(extract_screen_name(group_link))
+        posts = await vk.get_group_posts(extract_screen_name(group_link), count=5)
+        
+        import json
+        with open("temp.json", "w", encoding="utf-8") as file:
+            json.dump(info, file, indent=4, ensure_ascii=False)
+        with open("temp1.json", "w", encoding="utf-8") as file:
+            json.dump(posts, file, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":

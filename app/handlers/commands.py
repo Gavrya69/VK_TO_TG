@@ -46,47 +46,26 @@ async def cmd_help(message: Message):
     
     
 @router.message(Command("parse"))
-async def cmd_addroup(message: Message):
-    args = message.text.split(maxsplit=1)
+async def cmd_parse_group(message: Message):
+    args = message.text.split(maxsplit=2)
     link = args[1]
-    walls_count = args[2]
+    posts_cont = args[2]
     chat_id = message.chat.id
     
     async with VKSession() as vk:
-        resp = (await vk.get_group_info(link))
-    
-    async with SessionLocal() as session:
-        chat = await get_chat(session, chat_id)
-        if not chat:
-            chat = await add_chat(
-                session=session,
-                chat_id=chat_id,
-                title=message.chat.title or "private",
-                chat_type=message.chat.type,
-            )
-            
-        group = await get_group(session, vk_group_id=link)
-        if not group:
-            group = await add_group(
-                session=session,
-                vk_group_id=link,
-                name=link,
-            )
+        result = await vk.get_group_posts(link, posts_cont)
         
-        binding = await get_binding(session, vk_group_id=link, telegram_chat_id=chat_id)
-        if not binding:
-            await add_binding(
-                session=session,
-                vk_group_id=link,
-                telegram_chat_id=chat_id,
-            )
+        if result["ok"]:
             await message.answer(
-                "Привязка создана.",
-                reply_markup=get_close_button()
+                "Парсинг постов...",
             )
+            posts = (await vk.get_group_posts(link, posts_cont))["response"]["items"]
+            for post in posts:
+                await message.answer(
+                    post["text"],
+                )
         else:
             await message.answer(
-                "Данная группа уже привязана к этому чату.",
-                reply_markup=get_close_button()
+                result["status"],
             )
     
