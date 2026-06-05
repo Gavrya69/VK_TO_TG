@@ -5,3 +5,4 @@ test*.py
 temp*
 .venv
 database.db
+TODO.md
