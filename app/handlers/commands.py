@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
-from services.vk import VKSession
+from services.vk import vk
 from keyboards.menu import get_private_main_menu, get_public_main_menu
 from keyboards.buttons import get_close_button
 
@@ -52,20 +52,19 @@ async def cmd_parse_group(message: Message):
     posts_cont = args[2]
     chat_id = message.chat.id
     
-    async with VKSession() as vk:
-        result = await vk.get_group_posts(link, posts_cont)
-        
-        if result["ok"]:
+    result = await vk.get_group_posts(link, posts_cont)
+    
+    if result["ok"]:
+        await message.answer(
+            "Парсинг постов...",
+        )
+        posts = (await vk.get_group_posts(link, posts_cont))["response"]["items"]
+        for post in posts:
             await message.answer(
-                "Парсинг постов...",
+                post["text"],
             )
-            posts = (await vk.get_group_posts(link, posts_cont))["response"]["items"]
-            for post in posts:
-                await message.answer(
-                    post["text"],
-                )
-        else:
-            await message.answer(
-                result["status"],
-            )
+    else:
+        await message.answer(
+            result["status"],
+        )
     

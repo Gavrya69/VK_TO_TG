@@ -29,13 +29,11 @@ async def add_group(
     vk_group_id: int, 
     name: str,
     screen_name: str,
-    url: str,
 ):
     group = Group(
         vk_group_id=vk_group_id,
         name=name,
         screen_name=screen_name,
-        url=url,
     )
 
     session.add(group)

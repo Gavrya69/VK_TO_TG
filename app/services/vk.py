@@ -10,19 +10,25 @@ load_dotenv()
 TOKEN = os.getenv("VK_TOKEN")
 API_VERSION = "5.199"
 
-
 class VKSession:
     def __init__(self, token: str=TOKEN, api_version: str=API_VERSION, ssl=False):
         self.token = token
         self.api_version = api_version
         self.ssl = ssl
         self.session = None
-
+        
     async def __aenter__(self):
-        self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=self.ssl))
+        await self.start()
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
+        await self.close()    
+        
+    async def start(self):
+        self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=self.ssl))
+        return self
+
+    async def close(self):
         await self.session.close()
 
 
@@ -109,7 +115,7 @@ class VKSession:
         
         
     async def get_last_post(self, link: str) -> dict:
-        result = await self.get_walls(link, count=3)
+        result = await self.get_group_posts(link, count=5)
 
         if not result["ok"]:
             return result
@@ -119,6 +125,28 @@ class VKSession:
                 return {"ok": True, "post": post}
 
         return {"ok": False, "status": "no_posts"}
+
+
+    async def get_new_posts(self, group_link: str, last_post_id: int):
+        
+        result = await self.get_group_posts(group_link, 20)
+        
+        if not result["ok"]:
+            return result
+        
+        posts = result["response"]["items"]
+        new_posts = []
+        
+        for post in posts:
+            if post.get("is_pinned"):
+                continue
+            
+            if post["id"] > last_post_id:
+                new_posts.append(post)
+            
+        new_posts.sort(key=lambda x: x["id"])
+        
+        return {"ok": True, "posts": new_posts}
 
 
 def extract_screen_name(url: str) -> str:
@@ -131,19 +159,28 @@ def extract_screen_name(url: str) -> str:
     return s
 
 
+vk = VKSession()
+
+
+# ==================
+#   ТЕСТОВОЕ ГОВНО
+# ==================
+
 async def test():
     group_link = "https://vk.com/pso_pnv"
 
-    async with VKSession(TOKEN, ssl=False) as vk:
+    async with VKSession(TOKEN, ssl=False) as vk1:
         
-        info = await vk.get_group_info(extract_screen_name(group_link))
-        posts = await vk.get_group_posts(extract_screen_name(group_link), count=5)
+        info = await vk1.get_last_post(group_link)
+        posts = await vk1.get_new_posts(group_link, 515500)
+        
         
         import json
         with open("temp.json", "w", encoding="utf-8") as file:
             json.dump(info, file, indent=4, ensure_ascii=False)
         with open("temp1.json", "w", encoding="utf-8") as file:
             json.dump(posts, file, indent=4, ensure_ascii=False)
+            
 
 
 if __name__ == "__main__":
