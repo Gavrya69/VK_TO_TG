@@ -1,4 +1,4 @@
-# VK Groups → Telegram Bot
+# [WIP] VK Groups → Telegram Bot
 
 Бот на **aiogram+aiohttp** для автоматического переноса постов из VK-сообществ в Telegram-каналы, группы и чаты.
 
