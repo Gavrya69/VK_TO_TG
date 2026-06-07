@@ -60,7 +60,7 @@ async def cmd_parse_group(message: Message):
         return
     
     loading_msg = await message.answer(
-        "⏳ Подождите, происходит парсинг постов...\nЭто сообщение удалится при завершении.",
+        "⏳ Подождите, начинаю работу...\nЭто сообщение удалится при завершении.",
     )
     
     link = args[1]
@@ -71,7 +71,7 @@ async def cmd_parse_group(message: Message):
         posts = result["posts"]
         
         if not posts:        
-            loading_msg.edit_text(
+            await loading_msg.edit_text(
                 f"А данной группе нет постов.",
                 reply_markup=get_close_button()
             )
@@ -86,7 +86,7 @@ async def cmd_parse_group(message: Message):
                     chunk,
                 )
     else:
-        loading_msg.edit_text(
+        await loading_msg.edit_text(
             f"Ошибка: {result['status']}",
             reply_markup=get_close_button()
         )
@@ -103,7 +103,7 @@ async def cmd_parse_group(message: Message):
         return
     
     loading_msg = await message.answer(
-        "⏳ Подождите, происходит парсинг постов...\nЭто сообщение удалится при завершении.",
+        "⏳ Подождите, начинаю работу...\nЭто сообщение удалится при завершении.",
     )
     
     link = args[1]    
@@ -113,8 +113,8 @@ async def cmd_parse_group(message: Message):
         posts = result["posts"]
         pinned_posts = [post for post in posts if post.get("is_pinned")]
         
-        if not posts:        
-            loading_msg.edit_text(
+        if not pinned_posts:        
+            await loading_msg.edit_text(
                 f"А данной группе нет закрепленных постов.",
                 reply_markup=get_close_button()
             )
@@ -129,7 +129,7 @@ async def cmd_parse_group(message: Message):
                     chunk,
                 )
     else:
-        loading_msg.edit_text(
+        await loading_msg.edit_text(
             f"Ошибка: {result['status']}",
             reply_markup=get_close_button()
         )
