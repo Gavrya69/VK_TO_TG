@@ -5,6 +5,7 @@ from aiogram.types import Message
 from services.vk import vk
 from keyboards.menu import get_private_main_menu, get_public_main_menu
 from keyboards.buttons import get_close_button
+from services.tg import add_post_info
 
 from database.db import (
     SessionLocal,
@@ -15,6 +16,9 @@ from database.db import (
     add_chat,
     get_chat,
 )
+
+from utils import split_post
+
 
 
 router = Router()
@@ -45,24 +49,56 @@ async def cmd_help(message: Message):
     )
     
     
-@router.message(Command("parse"))
+@router.message(Command("get_posts"))
 async def cmd_parse_group(message: Message):
     args = message.text.split(maxsplit=2)
     link = args[1]
-    posts_cont = args[2]
+    count = args[2]
     chat_id = message.chat.id
     
-    result = await vk.get_group_posts(link, posts_cont)
+    result = await vk.get_group_posts(link, count)
     
     if result["ok"]:
+        # TODO: Удалять это сообщение в конце
         await message.answer(
-            "Парсинг постов...",
-        )
-        posts = (await vk.get_group_posts(link, posts_cont))["response"]["items"]
+            "Подождите, происходит парсинг постов...\nЭто сообщение удалится при завершении.",
+    )
+        posts = result["posts"]
+        # TODO: Добавить ответ когда нет постов
         for post in posts:
-            await message.answer(
-                post["text"],
-            )
+            chunks = split_post(post["text"])
+            
+            for chunk in chunks:
+                chunk = add_post_info(chunk)
+                await message.answer(
+                    chunk,
+                )
+    else:
+        await message.answer(
+            result["status"]
+        )
+    
+
+@router.message(Command("get_pinned"))
+async def cmd_parse_group(message: Message):
+    args = message.text.split(maxsplit=2)
+    link = args[1]
+    count = args[2]
+    chat_id = message.chat.id
+    
+    result = await vk.get_group_posts(link, count, with_pinned=True)
+    
+    if result["ok"]:
+        posts = result["posts"]
+        pinned_posts = [post for post in posts if post.get("is_pinned")]
+        # TODO: Добавить ответ когда нет постов
+        for post in pinned_posts:
+            chunks = split_post(post["text"])
+            
+            for chunk in chunks:
+                await message.answer(
+                    chunk,
+                )
     else:
         await message.answer(
             result["status"],

@@ -5,6 +5,9 @@ import re
 
 from dotenv import load_dotenv
 
+from utils import extract_screen_name
+
+
 load_dotenv()
 
 TOKEN = os.getenv("VK_TOKEN")
@@ -100,31 +103,27 @@ class VKSession:
         return await self.check_group(link)
 
 
-    async def get_group_posts(self, link: str, count: int = 1) -> dict:
+    async def get_group_posts(self, link: str, count: int=1, with_pinned: bool=False) -> dict:
+        count = int(count)
         result = await self.check_group(link)
 
         if not result["ok"]:
             return result
 
         group = result["group"]
-        
-        return await self.request("wall.get", {
+
+        result = await self.request("wall.get", {
             "owner_id": -group["id"],
-            "count": count
+            "count": count+5
         })
         
+        posts = result["response"]["items"]
+        if not with_pinned:
+            posts = [post for post in posts if not post.get("is_pinned")]
         
-    async def get_last_post(self, link: str) -> dict:
-        result = await self.get_group_posts(link, count=5)
+        posts = posts[:count]
 
-        if not result["ok"]:
-            return result
-
-        for post in result["response"]["items"]:
-            if not post.get("is_pinned"):
-                return {"ok": True, "post": post}
-
-        return {"ok": False, "status": "no_posts"}
+        return {"ok": True, "posts": posts}
 
 
     async def get_new_posts(self, group_link: str, last_post_id: int):
@@ -147,17 +146,20 @@ class VKSession:
         new_posts.sort(key=lambda x: x["id"])
         
         return {"ok": True, "posts": new_posts}
-
-
-def extract_screen_name(url: str) -> str:
-    s = url.strip()
-    s = s.replace("https://", "").replace("http://", "")
-    s = re.sub(r"^(m\.)?vk\.(com|ru)/", "", s)
-    s = s.split("?")[0]
-    s = s.split("/")[0]
     
-    return s
+    
+    async def get_user_info(self, user_id):
+        result = await self.request(
+            "users.get", {
+            "user_ids": user_id
+        })
+        
+        if not result["ok"]:
+            return result
 
+        data = result["response"]
+
+        return {"ok": True, "data": data}
 
 vk = VKSession()
 
