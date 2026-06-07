@@ -85,6 +85,7 @@ async def cmd_parse_group(message: Message):
                 await message.answer(
                     chunk,
                 )
+                await loading_msg.delete()
     else:
         await loading_msg.edit_text(
             f"Ошибка: {result['status']}",
@@ -128,9 +129,11 @@ async def cmd_parse_group(message: Message):
                 await message.answer(
                     chunk,
                 )
+                await loading_msg.delete()
     else:
         await loading_msg.edit_text(
             f"Ошибка: {result['status']}",
             reply_markup=get_close_button()
         )
+        
     
