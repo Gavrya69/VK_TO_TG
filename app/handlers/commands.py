@@ -5,7 +5,7 @@ from aiogram.types import Message
 from services.vk import vk
 from keyboards.menu import get_private_main_menu, get_public_main_menu
 from keyboards.buttons import get_close_button
-from services.tg import add_post_info
+from services.tg import format_post
 
 from database.db import (
     SessionLocal,
@@ -52,55 +52,85 @@ async def cmd_help(message: Message):
 @router.message(Command("get_posts"))
 async def cmd_parse_group(message: Message):
     args = message.text.split(maxsplit=2)
+    if len(args) <= 1:
+        await message.answer(
+            "Использование команды:\n/get_posts <ссылка на группу> <количество постов>",
+            reply_markup=get_close_button()
+            )
+        return
+    
+    loading_msg = await message.answer(
+        "⏳ Подождите, происходит парсинг постов...\nЭто сообщение удалится при завершении.",
+    )
+    
     link = args[1]
     count = args[2]
-    chat_id = message.chat.id
-    
     result = await vk.get_group_posts(link, count)
     
     if result["ok"]:
-        # TODO: Удалять это сообщение в конце
-        await message.answer(
-            "Подождите, происходит парсинг постов...\nЭто сообщение удалится при завершении.",
-    )
         posts = result["posts"]
-        # TODO: Добавить ответ когда нет постов
+        
+        if not posts:        
+            loading_msg.edit_text(
+                f"А данной группе нет постов.",
+                reply_markup=get_close_button()
+            )
+            return
+        
         for post in posts:
-            chunks = split_post(post["text"])
+            text = format_post(post)
+            chunks = split_post(text)
             
             for chunk in chunks:
-                chunk = add_post_info(chunk)
                 await message.answer(
                     chunk,
                 )
     else:
-        await message.answer(
-            result["status"]
+        loading_msg.edit_text(
+            f"Ошибка: {result['status']}",
+            reply_markup=get_close_button()
         )
     
 
 @router.message(Command("get_pinned"))
 async def cmd_parse_group(message: Message):
     args = message.text.split(maxsplit=2)
-    link = args[1]
-    count = args[2]
-    chat_id = message.chat.id
+    if len(args) <= 1:
+        await message.answer(
+            "Использование команды:\n/get_pinned <ссылка на группу>",
+            reply_markup=get_close_button()
+            )
+        return
     
-    result = await vk.get_group_posts(link, count, with_pinned=True)
+    loading_msg = await message.answer(
+        "⏳ Подождите, происходит парсинг постов...\nЭто сообщение удалится при завершении.",
+    )
+    
+    link = args[1]    
+    result = await vk.get_group_posts(link, 5, with_pinned=True)
     
     if result["ok"]:
         posts = result["posts"]
         pinned_posts = [post for post in posts if post.get("is_pinned")]
-        # TODO: Добавить ответ когда нет постов
+        
+        if not posts:        
+            loading_msg.edit_text(
+                f"А данной группе нет закрепленных постов.",
+                reply_markup=get_close_button()
+            )
+            return
+        
         for post in pinned_posts:
-            chunks = split_post(post["text"])
+            text = format_post(post)
+            chunks = split_post(text)
             
             for chunk in chunks:
                 await message.answer(
                     chunk,
                 )
     else:
-        await message.answer(
-            result["status"],
+        loading_msg.edit_text(
+            f"Ошибка: {result['status']}",
+            reply_markup=get_close_button()
         )
     

@@ -35,7 +35,7 @@ class VKSession:
         await self.session.close()
 
 
-    async def request(self, method: str, params: dict=None) -> dict:
+    async def request(self, method: str, params: dict=None):
         url = f"https://api.vk.com/method/{method}"
         
         if params is None:
@@ -57,7 +57,7 @@ class VKSession:
             return {"ok": True, "response": data["response"]}
 
 
-    async def get_group_by_link(self, link: str) -> dict:
+    async def get_group_by_link(self, link: str):
         result = await self.request(
             "groups.getById", {
             "group_id": extract_screen_name(link)
@@ -74,7 +74,7 @@ class VKSession:
         return {"ok": True, "group": data[0]}
 
     
-    async def check_group(self, link: str) -> dict: 
+    async def check_group(self, link: str): 
         result = await self.get_group_by_link(link)
 
         if not result["ok"]:
@@ -93,17 +93,17 @@ class VKSession:
         if group["is_closed"] == 2:
             return {"ok": False, "status": "private", "group": group}
 
-        if group["is_closed"] == 1:
+        if group["is_closed"] == 1: 
             return {"ok": False, "status": "closed", "group": group}
 
         return {"ok": True, "group": group}
     
 
-    async def get_group_info(self, link: str) -> dict:
+    async def get_group_info(self, link: str):
         return await self.check_group(link)
 
 
-    async def get_group_posts(self, link: str, count: int=1, with_pinned: bool=False) -> dict:
+    async def get_group_posts(self, link: str, count: int=1, with_pinned: bool=False):
         count = int(count)
         result = await self.check_group(link)
 
@@ -122,18 +122,34 @@ class VKSession:
             posts = [post for post in posts if not post.get("is_pinned")]
         
         posts = posts[:count]
+        
+        posts = await self.add_posts_authors(posts)
 
         return {"ok": True, "posts": posts}
+    
+    
+    async def get_user_info(self, user_id: int | list):
+        if isinstance(user_id, int):
+            user_id = [user_id]
+            
+        result = await self.request(
+            "users.get", {
+            "user_ids": ', '.join(map(str, user_id))
+        })
+        
+        if not result["response"]:
+            return {"ok": False}
+
+        return {"ok": False, "users": result["response"]}
 
 
     async def get_new_posts(self, group_link: str, last_post_id: int):
-        
         result = await self.get_group_posts(group_link, 20)
         
         if not result["ok"]:
             return result
         
-        posts = result["response"]["items"]
+        posts = result["posts"]
         new_posts = []
         
         for post in posts:
@@ -148,18 +164,22 @@ class VKSession:
         return {"ok": True, "posts": new_posts}
     
     
-    async def get_user_info(self, user_id):
-        result = await self.request(
-            "users.get", {
-            "user_ids": user_id
-        })
+    async def add_posts_authors(self, posts: dict):
+        author_ids = [post.get("signer_id") for post in posts if post.get("signer_id")]
         
-        if not result["ok"]:
-            return result
+        if not len(author_ids):
+            return posts
+        
+        authors = (await self.get_user_info(author_ids)).get("users")
+        authors_by_id = {author["id"]: author for author in authors}
+        
+        for post in posts:
+            signer_id = post.get("signer_id")
+            if signer_id in authors_by_id:
+                post["author_info"] = authors_by_id[signer_id]
 
-        data = result["response"]
+        return posts
 
-        return {"ok": True, "data": data}
 
 vk = VKSession()
 
@@ -172,18 +192,30 @@ async def test():
     group_link = "https://vk.com/pso_pnv"
 
     async with VKSession(TOKEN, ssl=False) as vk1:
-        
-        info = await vk1.get_last_post(group_link)
-        posts = await vk1.get_new_posts(group_link, 515500)
-        
-        
         import json
-        with open("temp.json", "w", encoding="utf-8") as file:
+        i = 0
+        
+        # i += 1
+        # info = await vk1.get_group_info(group_link)
+        # with open(f"temp{i}.json", "w", encoding="utf-8") as file:
+        #     json.dump(info, file, indent=4, ensure_ascii=False)
+        
+        i += 1
+        info = await vk1.get_group_posts(group_link, 3, True)
+        with open(f"temp{i}.json", "w", encoding="utf-8") as file:
             json.dump(info, file, indent=4, ensure_ascii=False)
-        with open("temp1.json", "w", encoding="utf-8") as file:
-            json.dump(posts, file, indent=4, ensure_ascii=False)
             
-
+        i += 1
+        info = await vk1.get_new_posts(group_link, 515500)        
+        with open(f"temp{i}.json", "w", encoding="utf-8") as file:
+            json.dump(info, file, indent=4, ensure_ascii=False)
+        
+        i += 1
+        info = await vk1.get_user_info([143522729, 143522728])        
+        with open(f"temp{i}.json", "w", encoding="utf-8") as file:
+            json.dump(info, file, indent=4, ensure_ascii=False)
+        
+            
 
 if __name__ == "__main__":
     asyncio.run(test())

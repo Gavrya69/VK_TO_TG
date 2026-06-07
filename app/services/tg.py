@@ -1,3 +1,5 @@
+import time
+
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,7 +27,20 @@ async def sync_chat_admins(
         )
 
 # TODO: ДОДЕЛАТЬ ЭТУ ФУНКЦИЮ
-def add_post_info(chunk: str, c_num: int, c_count: int, author_id: int):
-    chunk = f"{c_num}/{c_count}\n{chunk}" # chunk numerating
+def format_post(post: dict) -> str:
+    parts = []
     
-    return chunk
+    struct_time = time.localtime(post["date"])
+    formatted_time = time.strftime("%d.%m.%Y %H:%M:%S", struct_time) 
+    parts.append(f"📅 Дата: {formatted_time}")
+    
+    author = post.get("author_info")
+    if author:
+        parts.append(f"👤 Автор: {author["first_name"]} {author["last_name"]}")
+        
+    parts.append(f"🔗 Ссылка: https://vk.com/wall{post['from_id']}_{post['id']}")
+    
+    parts.append("")
+    parts.append(post["text"])
+    
+    return "\n".join(parts)
