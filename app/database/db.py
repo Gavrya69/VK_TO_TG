@@ -35,6 +35,7 @@ async def add_group(
         vk_group_id=vk_group_id,
         name=name,
         screen_name=screen_name,
+        last_post_id=last_post_id,
     )
 
     session.add(group)

@@ -187,7 +187,7 @@ async def process_binding(message: Message, state: FSMContext):
     url = f"https://vk.com/{info['screen_name']}"
     
     posts = (await vk.get_group_posts(link))["posts"]
-    last_post_id = posts[0]["id"] if posts else 0
+    last_post_id = posts[0]["id"] if posts else 1
 
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
