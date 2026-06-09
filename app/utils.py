@@ -1,14 +1,22 @@
 import re
 import time
 
-def extract_screen_name(url: str) -> str:
-    s = url.strip()
-    s = s.replace("https://", "").replace("http://", "")
-    s = re.sub(r"^(m\.)?vk\.(com|ru)/", "", s)
-    s = s.split("?")[0]
-    s = s.split("/")[0]
-    
-    return s
+
+def extract_group_ref(value: str | int) -> str | int:
+    if isinstance(value, int):
+        return value
+
+    value = value.strip()
+
+    if value.isdigit():
+        return int(value)
+
+    value = value.replace("https://", "").replace("http://", "")
+    value = re.sub(r"^(m\.)?vk\.(com|ru)/", "", value)
+    value = value.split("?")[0]
+    value = value.split("/")[0]
+
+    return value
 
 
 def split_post(text: str, limit: int=4000) -> list[str]:

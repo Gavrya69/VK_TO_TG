@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from keyboards.buttons import append_back_button, append_close_button
 
+
 def get_private_main_menu(chat_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -10,6 +11,7 @@ def get_private_main_menu(chat_id):
             [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")],
         ]
     )
+
 
 def get_public_main_menu(chat_id):
     return InlineKeyboardMarkup(
@@ -29,7 +31,8 @@ def get_chat_menu(chat_id):
             [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_menu")],
         ]
     )
-    
+
+
 def get_my_chats_menu(chats: list=[]):
     keyboard = []
     for c in chats:
@@ -43,6 +46,7 @@ def get_my_chats_menu(chats: list=[]):
     append_back_button(keyboard, "main_menu")
     
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def get_delete_menu(chat_id: int, bindings: list = [], back_button: bool=True):
     keyboard = []
@@ -60,4 +64,19 @@ def get_delete_menu(chat_id: int, bindings: list = [], back_button: bool=True):
     else: 
         append_close_button(keyboard)
 
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_parse_menu(chat_id: int, vk_group_link: int):
+    keyboard = []
+    
+    keyboard.append([
+        InlineKeyboardButton(
+            text="📥 Спарсить посты", 
+            callback_data=f"parse:{chat_id}:{vk_group_link}"
+        )
+    ])
+    
+    append_back_button(keyboard, "main_menu")
+    
     return InlineKeyboardMarkup(inline_keyboard=keyboard)

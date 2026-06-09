@@ -20,7 +20,6 @@ from database.db import (
 from utils import split_post
 
 
-
 router = Router()
 
 
@@ -47,8 +46,8 @@ async def cmd_help(message: Message):
         "/help - помощь\n\n"
         "/add"
     )
-    
-    
+
+
 @router.message(Command("get_posts"))
 async def cmd_parse_group(message: Message):
     args = message.text.split(maxsplit=2)
@@ -72,7 +71,7 @@ async def cmd_parse_group(message: Message):
         
         if not posts:        
             await loading_msg.edit_text(
-                f"А данной группе нет постов.",
+                f"В данной группе нет постов.",
                 reply_markup=get_close_button()
             )
             return
@@ -85,13 +84,13 @@ async def cmd_parse_group(message: Message):
                 await message.answer(
                     chunk,
                 )
-                await loading_msg.delete()
+        await loading_msg.delete()
     else:
         await loading_msg.edit_text(
             f"Ошибка: {result['status']}",
             reply_markup=get_close_button()
         )
-    
+
 
 @router.message(Command("get_pinned"))
 async def cmd_parse_group(message: Message):
@@ -116,7 +115,7 @@ async def cmd_parse_group(message: Message):
         
         if not pinned_posts:        
             await loading_msg.edit_text(
-                f"А данной группе нет закрепленных постов.",
+                f"В данной группе нет закрепленных постов.",
                 reply_markup=get_close_button()
             )
             return
@@ -129,11 +128,15 @@ async def cmd_parse_group(message: Message):
                 await message.answer(
                     chunk,
                 )
-                await loading_msg.delete()
+        await loading_msg.delete()
     else:
         await loading_msg.edit_text(
             f"Ошибка: {result['status']}",
             reply_markup=get_close_button()
         )
-        
-    
+
+
+@router.message(Command("some_command"))
+async def cmd_some_command(message: Message):
+    # TODO: Тут будет какая-нибудь некст команда
+    pass

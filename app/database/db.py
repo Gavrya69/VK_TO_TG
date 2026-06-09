@@ -29,6 +29,7 @@ async def add_group(
     vk_group_id: int, 
     name: str,
     screen_name: str,
+    last_post_id: int,
 ):
     group = Group(
         vk_group_id=vk_group_id,

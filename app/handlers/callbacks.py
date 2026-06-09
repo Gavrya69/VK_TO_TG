@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import F, Router
-from aiogram.types import CallbackQuery, Message, ChatMemberUpdated
+from aiogram.types import CallbackQuery, Message, ChatMemberUpdated, InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
 
 from keyboards.menu import (
@@ -9,13 +9,15 @@ from keyboards.menu import (
     get_chat_menu,
     get_my_chats_menu,
     get_delete_menu,
+    get_parse_menu,
 )
 
 from keyboards.buttons import get_back_button
 from handlers.states import GroupControl
 
-from services.tg import sync_chat_admins
+from services.tg import sync_chat_admins, format_post
 from services.vk import vk
+from utils import split_post
 
 from database.db import (
     SessionLocal,
@@ -128,7 +130,7 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
     
     
 @router.callback_query(F.data.startswith("add_binding:"))
-async def add_binding(callback: CallbackQuery, state: FSMContext):
+async def add_binding_menu(callback: CallbackQuery, state: FSMContext):
     chat_id = int(callback.data.split(":")[1])
     
     await state.set_state(GroupControl.waiting_for_add)
@@ -183,7 +185,7 @@ async def process_binding(message: Message, state: FSMContext):
     name = info["name"]
     screen_name = info["screen_name"]
     url = f"https://vk.com/{info['screen_name']}"
-    last_post_id = vk.get_last_post(link)["post"]["id"]
+    last_post_id = (await vk.get_group_posts(link, 3))["posts"][0]["id"]
 
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
@@ -193,7 +195,6 @@ async def process_binding(message: Message, state: FSMContext):
                 chat_id=chat_id,
                 title=message.chat.title or "private",
                 chat_type=message.chat.type,
-                last_post_id=last_post_id,
             )
         
         group = await get_group(session, vk_group_id=vk_group_id)
@@ -203,9 +204,10 @@ async def process_binding(message: Message, state: FSMContext):
                 vk_group_id=vk_group_id,
                 name=name,
                 screen_name=screen_name,
+                last_post_id=last_post_id,
             )
         
-        binding = await get_binding(session, vk_group_id=vk_group_id, telegram_chat_id=chat_id)
+        binding = await get_binding(session=session, vk_group_id=vk_group_id, telegram_chat_id=chat_id)
         if not binding:
             await add_binding(
                 session=session,
@@ -213,8 +215,8 @@ async def process_binding(message: Message, state: FSMContext):
                 telegram_chat_id=chat_id,
             )
             await message.answer(
-                "Привязка создана.",
-                reply_markup=get_back_button(chat_id)
+                "Привязка успешно создана. Желаете спарсить посты?",
+                reply_markup=get_parse_menu(chat_id, vk_group_id)
             )
         else:
             await message.answer(
@@ -224,6 +226,72 @@ async def process_binding(message: Message, state: FSMContext):
             
     await state.clear()
     
+    
+@router.callback_query(F.data.startswith("parse:"))
+async def parse_posts(callback: CallbackQuery, state: FSMContext):
+    chat_id = int(callback.data.split(":")[1])
+    group_id = int(callback.data.split(":")[2])
+    
+    await state.set_state(GroupControl.waiting_for_post_count)
+    await state.update_data(target_chat_id=chat_id)
+    await state.update_data(vk_group_id=group_id)
+
+    await callback.message.edit_text(
+        "Сколько постов ты хочешь спарсить?",
+        reply_markup=get_back_button(chat_id)
+    )
+
+    await callback.answer()
+    
+    
+@router.message(GroupControl.waiting_for_post_count)
+async def process_parsing(message: Message, state: FSMContext):
+    data = await state.get_data()
+    chat_id = data["target_chat_id"]
+    group_id = data["vk_group_id"]
+
+    try:
+        posts_count = int(message.text)
+    except:
+        await message.answer(
+            "Введите число",
+            reply_markup=get_back_button()
+        )
+        return
+    
+    loading_msg = await message.answer(
+        "⏳ Подождите, начинаю работу...\nЭто сообщение удалится при завершении.",
+    )
+    
+    result = await vk.get_group_posts(group_id, posts_count)
+    
+    if result["ok"]:
+        posts = result["posts"]
+        
+        if not posts:        
+            await loading_msg.edit_text(
+                f"В данной группе нет постов.",
+                reply_markup=get_back_button("main_menu")
+            )
+            return
+        
+        for post in posts:
+            text = format_post(post)
+            chunks = split_post(text)
+            
+            for chunk in chunks:
+                await message.answer(
+                    chunk,
+                )
+                
+        await loading_msg.delete()
+        
+    else:
+        await loading_msg.edit_text(
+            f"Ошибка: {result['status']}",
+            reply_markup=get_back_button("main_menu")
+        )
+
     
 @router.callback_query(F.data.startswith("del_binding_menu:"))
 async def del_binding_menu(callback: CallbackQuery):

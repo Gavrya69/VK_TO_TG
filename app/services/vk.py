@@ -5,7 +5,7 @@ import re
 
 from dotenv import load_dotenv
 
-from utils import extract_screen_name
+from utils import extract_group_ref
 
 
 load_dotenv()
@@ -19,14 +19,14 @@ class VKSession:
         self.api_version = api_version
         self.ssl = ssl
         self.session = None
-        
+
     async def __aenter__(self):
         await self.start()
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.close()    
-        
+
     async def start(self):
         self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=self.ssl))
         return self
@@ -57,10 +57,10 @@ class VKSession:
             return {"ok": True, "response": data["response"]}
 
 
-    async def get_group_by_link(self, link: str):
+    async def get_group_by_ref(self, ref: str):
         result = await self.request(
             "groups.getById", {
-            "group_id": extract_screen_name(link)
+            "group_id": extract_group_ref(ref)
         })
 
         if not result["ok"]:
@@ -73,9 +73,9 @@ class VKSession:
 
         return {"ok": True, "group": data[0]}
 
-    
-    async def check_group(self, link: str): 
-        result = await self.get_group_by_link(link)
+
+    async def check_group(self, ref: str): 
+        result = await self.get_group_by_ref(ref)
 
         if not result["ok"]:
             code = result["error_code"]
@@ -97,15 +97,15 @@ class VKSession:
             return {"ok": False, "status": "closed", "group": group}
 
         return {"ok": True, "group": group}
-    
-
-    async def get_group_info(self, link: str):
-        return await self.check_group(link)
 
 
-    async def get_group_posts(self, link: str, count: int=1, with_pinned: bool=False):
+    async def get_group_info(self, ref: str):
+        return await self.check_group(ref)
+
+
+    async def get_group_posts(self, ref: str, count: int=1, with_pinned: bool=False):
         count = int(count)
-        result = await self.check_group(link)
+        result = await self.check_group(ref)
 
         if not result["ok"]:
             return result
@@ -126,8 +126,8 @@ class VKSession:
         posts = await self.add_posts_authors(posts)
 
         return {"ok": True, "posts": posts}
-    
-    
+
+
     async def get_user_info(self, user_id: int | list):
         if isinstance(user_id, int):
             user_id = [user_id]
@@ -143,8 +143,8 @@ class VKSession:
         return {"ok": False, "users": result["response"]}
 
 
-    async def get_new_posts(self, group_link: str, last_post_id: int):
-        result = await self.get_group_posts(group_link, 20)
+    async def get_new_posts(self, group_ref: str, last_post_id: int):
+        result = await self.get_group_posts(group_ref, 20)
         
         if not result["ok"]:
             return result
@@ -162,8 +162,8 @@ class VKSession:
         new_posts.sort(key=lambda x: x["id"])
         
         return {"ok": True, "posts": new_posts}
-    
-    
+
+
     async def add_posts_authors(self, posts: dict):
         author_ids = [post.get("signer_id") for post in posts if post.get("signer_id")]
         
@@ -189,24 +189,24 @@ vk = VKSession()
 # ==================
 
 async def test():
-    group_link = "https://vk.com/pso_pnv"
+    group_ref = "https://vk.com/pso_pnv"
 
     async with VKSession(TOKEN, ssl=False) as vk1:
         import json
         i = 0
         
         # i += 1
-        # info = await vk1.get_group_info(group_link)
+        # info = await vk1.get_group_info(group_ref)
         # with open(f"temp{i}.json", "w", encoding="utf-8") as file:
         #     json.dump(info, file, indent=4, ensure_ascii=False)
         
         i += 1
-        info = await vk1.get_group_posts(group_link, 3, True)
+        info = await vk1.get_group_posts(group_ref, 3, True)
         with open(f"temp{i}.json", "w", encoding="utf-8") as file:
             json.dump(info, file, indent=4, ensure_ascii=False)
             
         i += 1
-        info = await vk1.get_new_posts(group_link, 515500)        
+        info = await vk1.get_new_posts(group_ref, 515500)        
         with open(f"temp{i}.json", "w", encoding="utf-8") as file:
             json.dump(info, file, indent=4, ensure_ascii=False)
         

@@ -26,7 +26,7 @@ async def sync_chat_admins(
             is_creator=(admin.status == "creator")
         )
 
-# TODO: ДОДЕЛАТЬ ЭТУ ФУНКЦИЮ
+# TODO: (Отформатировать информацию как цитату, добавить гиперссылку на автора)
 def format_post(post: dict) -> str:
     parts = []
     
