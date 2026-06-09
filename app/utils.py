@@ -1,5 +1,4 @@
 import re
-import time
 
 
 def extract_group_ref(value: str | int) -> str | int:

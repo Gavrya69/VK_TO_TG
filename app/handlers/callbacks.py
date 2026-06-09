@@ -150,29 +150,29 @@ async def process_binding(message: Message, state: FSMContext):
     chat_id = data["target_chat_id"]
     link = message.text
     
-    resp = (await vk.get_group_info(link))
-    if not resp["ok"]:
-        if resp["status"] == "not_found":
+    result = (await vk.get_group_info(link))
+    if not result["ok"]:
+        if result["status"] == "not_found":
             await message.answer(
                 "Группа не найдена.",
                 reply_markup=get_back_button(chat_id)
             )
-        elif resp["status"] == "access_denied":
+        elif result["status"] == "access_denied":
             await message.answer(
                 "Ошибка доступа к группе.",
                 reply_markup=get_back_button(chat_id)
             )
-        elif resp["status"] == "unknown_error":
+        elif result["status"] == "unknown_error":
             await message.answer(
                 "Неизвестная ошибка.",
                 reply_markup=get_back_button(chat_id)
             )
-        elif resp["status"] == "private":
+        elif result["status"] == "private":
             await message.answer(
                 "Группа является приватной.",
                 reply_markup=get_back_button(chat_id)
             )
-        elif resp["status"] == "closed":
+        elif result["status"] == "closed":
             await message.answer(
                 "Группа является закрытой.",
                 reply_markup=get_back_button(chat_id)
@@ -180,12 +180,14 @@ async def process_binding(message: Message, state: FSMContext):
         await state.clear()
         return
         
-    info = resp["group"]
+    info = result["group"]
     vk_group_id = info["id"]
     name = info["name"]
     screen_name = info["screen_name"]
     url = f"https://vk.com/{info['screen_name']}"
-    last_post_id = (await vk.get_group_posts(link, 3))["posts"][0]["id"]
+    
+    posts = (await vk.get_group_posts(link))["posts"]
+    last_post_id = posts[0]["id"] if posts else 0
 
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)

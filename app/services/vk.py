@@ -190,30 +190,31 @@ vk = VKSession()
 
 async def test():
     group_ref = "https://vk.com/pso_pnv"
+    group_ref = "https://vk.com/club239462773"
 
     async with VKSession(TOKEN, ssl=False) as vk1:
         import json
         i = 0
         
-        # i += 1
-        # info = await vk1.get_group_info(group_ref)
-        # with open(f"temp{i}.json", "w", encoding="utf-8") as file:
-        #     json.dump(info, file, indent=4, ensure_ascii=False)
+        i += 1
+        info = await vk1.get_group_info(group_ref)
+        with open(f"temp{i}.json", "w", encoding="utf-8") as file:
+            json.dump(info, file, indent=4, ensure_ascii=False)
         
         i += 1
         info = await vk1.get_group_posts(group_ref, 3, True)
         with open(f"temp{i}.json", "w", encoding="utf-8") as file:
             json.dump(info, file, indent=4, ensure_ascii=False)
             
-        i += 1
-        info = await vk1.get_new_posts(group_ref, 515500)        
-        with open(f"temp{i}.json", "w", encoding="utf-8") as file:
-            json.dump(info, file, indent=4, ensure_ascii=False)
+        # i += 1
+        # info = await vk1.get_new_posts(group_ref, 515500)        
+        # with open(f"temp{i}.json", "w", encoding="utf-8") as file:
+        #     json.dump(info, file, indent=4, ensure_ascii=False)
         
-        i += 1
-        info = await vk1.get_user_info([143522729, 143522728])        
-        with open(f"temp{i}.json", "w", encoding="utf-8") as file:
-            json.dump(info, file, indent=4, ensure_ascii=False)
+        # i += 1
+        # info = await vk1.get_user_info([143522729, 143522728])        
+        # with open(f"temp{i}.json", "w", encoding="utf-8") as file:
+        #     json.dump(info, file, indent=4, ensure_ascii=False)
         
             
 
