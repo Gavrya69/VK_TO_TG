@@ -36,7 +36,7 @@ def format_post(post: dict) -> str:
     
     author = post.get("author_info")
     if author:
-        parts.append(f"👤 Автор: {author["first_name"]} {author["last_name"]}")
+        parts.append(f"👤 Автор: {author['first_name']} {author['last_name']}")
         
     parts.append(f"🔗 Ссылка: https://vk.com/wall{post['from_id']}_{post['id']}")
     

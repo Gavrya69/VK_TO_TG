@@ -37,7 +37,7 @@ async def add_group(
         screen_name=screen_name,
         last_post_id=last_post_id,
     )
-
+    
     session.add(group)
     await session.commit()
     
@@ -61,7 +61,7 @@ async def get_group(
 
 async def add_chat(
     session: AsyncSession,
-    chat_id: int,
+chat_id: int,
     title: str,
     chat_type: str,
 ):

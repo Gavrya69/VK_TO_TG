@@ -28,11 +28,19 @@ class VKSession:
         await self.close()    
 
     async def start(self):
-        self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=self.ssl))
+        if self.session and not self.session.closed:
+            return self
+
+        timeout = aiohttp.ClientTimeout(total=15)
+        self.session = aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(ssl=self.ssl),
+            timeout=timeout
+        )
         return self
 
     async def close(self):
-        await self.session.close()
+        if self.session and not self.session.closed:
+            await self.session.close()
 
 
     async def request(self, method: str, params: dict=None):
@@ -44,17 +52,24 @@ class VKSession:
             "access_token": self.token,
             "v": self.api_version
         })
+        
+        try:
+            async with self.session.get(url, params=params) as resp:
+                data = await resp.json()
 
-        async with self.session.get(url, params=params) as resp:
-            data = await resp.json()
+                if "error" in data:
+                    return {
+                        "ok": False,
+                        "error_code": data["error"]["error_code"],
+                    }
 
-            if "error" in data:
-                return {
-                    "ok": False,
-                    "error_code": data["error"]["error_code"],
-                }
-
-            return {"ok": True, "response": data["response"]}
+                return {"ok": True, "response": data["response"]}
+            
+        except aiohttp.ClientError:
+            return {"ok": False, "status": "network_error"}
+        
+        except asyncio.TimeoutError:
+            return {"ok": False, "status": "timeout"}
 
 
     async def get_group_by_ref(self, ref: str):
@@ -140,7 +155,7 @@ class VKSession:
         if not result["response"]:
             return {"ok": False}
 
-        return {"ok": False, "users": result["response"]}
+        return {"ok": True, "users": result["response"]}
 
 
     async def get_new_posts(self, group_ref: str, last_post_id: int):
