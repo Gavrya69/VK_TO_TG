@@ -33,8 +33,10 @@ def get_chat_menu(chat_id):
     )
 
 
-def get_my_chats_menu(chats: list=[]):
+def get_my_chats_menu(chats: list=None):
+    chats = chats or []
     keyboard = []
+    
     for c in chats:
         keyboard.append([
             InlineKeyboardButton(
@@ -48,7 +50,7 @@ def get_my_chats_menu(chats: list=[]):
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-def get_delete_menu(chat_id: int, bindings: list = [], back_button: bool=True):
+def get_delete_menu(chat_id: int, bindings: list=None, back_button: bool=True):
     keyboard = []
     
     for b in bindings:

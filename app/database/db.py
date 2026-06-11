@@ -37,7 +37,7 @@ async def add_group(
         screen_name=screen_name,
         last_post_id=last_post_id,
     )
-    
+
     session.add(group)
     await session.commit()
     

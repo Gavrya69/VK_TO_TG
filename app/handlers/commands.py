@@ -63,7 +63,16 @@ async def cmd_parse_group(message: Message):
     )
     
     link = args[1]
-    count = args[2]
+    try:
+        count = int(args[2])
+    except ValueError:
+        await message.answer(
+            "Использование команды:\n/get_posts <ссылка на группу> <количество постов>",
+            reply_markup=get_close_button()
+            )
+        return
+        
+    count = max(1, min(count, 50))
     result = await vk.get_group_posts(link, count)
     
     if result["ok"]:

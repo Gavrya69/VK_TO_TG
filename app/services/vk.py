@@ -119,7 +119,6 @@ class VKSession:
 
 
     async def get_group_posts(self, ref: str, count: int=1, with_pinned: bool=False):
-        count = int(count)
         result = await self.check_group(ref)
 
         if not result["ok"]:
