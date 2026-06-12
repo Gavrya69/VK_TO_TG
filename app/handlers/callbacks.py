@@ -26,6 +26,7 @@ from database.db import (
     add_binding,
     get_binding,
     get_bindings_by_chat,
+    get_bindings_with_groups,
     delete_binding,
     get_chats,
     delete_chat_admins,
@@ -119,7 +120,8 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
         chat_ids = [c.chat_id for c in chats]
         chats = await get_chats(
             session=session,
-            chat_ids=chat_ids)
+            chat_ids=chat_ids
+        )
         
     await callback.message.edit_text(
         f"Ваши каналы: {len(chats)}.",
@@ -300,11 +302,11 @@ async def del_binding_menu(callback: CallbackQuery):
     chat_id = int(callback.data.split(":")[1])
 
     async with SessionLocal() as session:
-        bindings = await get_bindings_by_chat(
+        bindings = await get_bindings_with_groups(
             session=session,
             telegram_chat_id=chat_id,
         )
-    
+        
     if bindings:
         await callback.message.edit_text(
             "Какую группу хотите удалить?",
@@ -327,7 +329,7 @@ async def del_binding(callback: CallbackQuery):
             vk_group_id=vk_group_id,
             telegram_chat_id=chat_id,
         )
-        bindings = await get_bindings_by_chat(
+        bindings = await get_bindings_with_groups(
             session=session,
             telegram_chat_id=chat_id,
         )

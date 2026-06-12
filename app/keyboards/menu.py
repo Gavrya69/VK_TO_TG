@@ -56,8 +56,8 @@ def get_delete_menu(chat_id: int, bindings: list=None, back_button: bool=True):
     for b in bindings:
         keyboard.append([
             InlineKeyboardButton(
-                text=f"VK {b.vk_group_id}",
-                callback_data=f"del_binding:{chat_id}:{b.vk_group_id}"
+                text=f"{b[1].name}",
+                callback_data=f"del_binding:{chat_id}:{b[0].vk_group_id}"
             )
         ])
         

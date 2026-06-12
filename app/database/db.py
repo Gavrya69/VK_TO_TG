@@ -172,6 +172,18 @@ async def delete_binding(
     await session.commit()
 
 
+async def get_bindings_with_groups(
+    session: AsyncSession,
+    telegram_chat_id: int
+):
+    result = await session.execute(
+        select(Binding, Group)
+        .join(Group, Binding.vk_group_id == Group.vk_group_id)
+        .where(Binding.telegram_chat_id == telegram_chat_id)
+    )
+
+    return result.all()
+
 # --------------------
 # CHAT ADMINS
 # --------------------
@@ -193,6 +205,7 @@ async def add_chat_admin(
     
     return admin
 
+
 async def get_chats_by_admin(
     session: AsyncSession,
     user_id: int,
@@ -201,7 +214,8 @@ async def get_chats_by_admin(
         select(ChatAdmins).where(ChatAdmins.user_id == user_id)
     )
     
-    return result.scalars().all()
+    return result.scalars().all()   # without commit
+
 
 async def delete_chat_admins(
     session: AsyncSession,

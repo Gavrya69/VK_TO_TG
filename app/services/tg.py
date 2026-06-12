@@ -25,6 +25,8 @@ async def sync_chat_admins(
             user_id=admin.user.id,
             is_creator=(admin.status == "creator")
         )
+        await session.commit()
+
 
 # TODO: (Отформатировать информацию как цитату, добавить гиперссылку на автора)
 def format_post(post: dict) -> str:
