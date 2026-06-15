@@ -13,9 +13,10 @@ class Group(Base):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     
-    vk_group_id: Mapped[int] = mapped_column(Integer)
+    vk_group_id: Mapped[int] = mapped_column(Integer,  unique=True)
     name: Mapped[str] = mapped_column(String)
     screen_name: Mapped[str] = mapped_column(String)
+    last_post_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
     
 class Chat(Base):
@@ -33,15 +34,14 @@ class Binding(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
-    vk_group_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    vk_group_id: Mapped[int] = mapped_column(Integer, index=True)
     telegram_chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    telegram_thread_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     last_post_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint("vk_group_id", "telegram_chat_id", "telegram_thread_id"),
+        UniqueConstraint("vk_group_id", "telegram_chat_id"),
     )
 
 

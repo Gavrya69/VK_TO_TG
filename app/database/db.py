@@ -29,11 +29,13 @@ async def add_group(
     vk_group_id: int, 
     name: str,
     screen_name: str,
+    last_post_id: int,
 ):
     group = Group(
         vk_group_id=vk_group_id,
         name=name,
         screen_name=screen_name,
+        last_post_id=last_post_id,
     )
 
     session.add(group)
@@ -62,6 +64,17 @@ async def get_groups(
     
     return result.scalars().all()
 
+
+async def update_group_last_post_id(
+    session: AsyncSession,
+    group_id: int,
+    last_post_id: int
+):
+    group = await session.get(Group, group_id)
+    
+    if group:
+        group.last_post_id = last_post_id
+        await session.commit()
 
 # --------------------
 # TG CHATS
@@ -116,12 +129,12 @@ async def add_binding(
     session: AsyncSession,
     vk_group_id: int,
     telegram_chat_id: int,
-    telegram_thread_id: int | None = None,
+    last_post_id: int,
 ):
     binding = Binding(
         vk_group_id=vk_group_id,
         telegram_chat_id=telegram_chat_id,
-        telegram_thread_id=telegram_thread_id,
+        last_post_id=last_post_id,
     )
 
     session.add(binding)
@@ -211,6 +224,23 @@ async def update_binding_last_post_id(
     if binding:
         binding.last_post_id = last_post_id
         await session.commit()
+        
+        
+async def get_pending_bindings(
+    session: AsyncSession,
+    vk_group_id: int,
+    post_id: int,
+):
+    result = await session.execute(
+        select(Binding).where(
+            Binding.vk_group_id == vk_group_id,
+            (
+                (Binding.last_post_id.is_(None)) | (Binding.last_post_id < post_id)
+            )
+        )
+    )
+    
+    return result.scalars().all()
 
 # --------------------
 # CHAT ADMINS
