@@ -142,7 +142,7 @@ async def add_binding_menu(callback: CallbackQuery, state: FSMContext):
         "Отправь VK ссылку (например vk.com/habr)",
         reply_markup=get_back_button(chat_id)
     )
-
+    
     await callback.answer()
     
     

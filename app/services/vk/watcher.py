@@ -28,7 +28,7 @@ async def poll_vk(bot):
                         continue
                     
                     posts = result["posts"]
-                    for p in posts: print(p.id) #============================================
+                    
                     if not posts:
                         continue
                     
