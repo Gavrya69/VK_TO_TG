@@ -111,7 +111,7 @@ async def chat_menu(callback: CallbackQuery, state: FSMContext):
 async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     user_id = callback.from_user.id
-
+    # TODO: Сделать гиперссылки на чаты и каналы
     async with SessionLocal() as session:
         chats = await get_chats_by_admin(
             session=session,
@@ -182,14 +182,10 @@ async def process_binding(message: Message, state: FSMContext):
         await state.clear()
         return
         
-    info = result["group"]
-    vk_group_id = info["id"]
-    name = info["name"]
-    screen_name = info["screen_name"]
-    url = f"https://vk.com/{info['screen_name']}"
+    group = result["group"]
     
     posts = (await vk.get_group_posts(link))["posts"]
-    last_post_id = posts[0]["id"] if posts else 1
+    last_post_id = posts[0].id if posts else 1
 
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
@@ -201,26 +197,26 @@ async def process_binding(message: Message, state: FSMContext):
                 chat_type=message.chat.type,
             )
         
-        group = await get_group(session, vk_group_id=vk_group_id)
-        if not group:
-            group = await add_group(
+        db_group = await get_group(session, vk_group_id=group.id)
+        if not db_group:
+            db_group = await add_group(
                 session=session,
-                vk_group_id=vk_group_id,
-                name=name,
-                screen_name=screen_name,
+                vk_group_id=group.id,
+                name=group.name,
+                screen_name=group.screen_name,
                 last_post_id=last_post_id,
             )
         
-        binding = await get_binding(session=session, vk_group_id=vk_group_id, telegram_chat_id=chat_id)
+        binding = await get_binding(session=session, vk_group_id=group.id, telegram_chat_id=chat_id)
         if not binding:
             await add_binding(
                 session=session,
-                vk_group_id=vk_group_id,
+                vk_group_id=group.id,
                 telegram_chat_id=chat_id,
             )
             await message.answer(
                 "Привязка успешно создана. Желаете спарсить посты?",
-                reply_markup=get_parse_menu(chat_id, vk_group_id)
+                reply_markup=get_parse_menu(chat_id, group.id)
             )
         else:
             await message.answer(
