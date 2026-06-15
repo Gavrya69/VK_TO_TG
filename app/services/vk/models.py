@@ -9,7 +9,7 @@ class VKGroup:
     screen_name: str
     is_closed: int = 0
     
-    url: str
+    url: str = ""
 
 
 @dataclass
@@ -19,7 +19,7 @@ class VKUser:
     last_name: str
     is_closed: bool
     
-    url: str
+    url: str =""
 
 
 @dataclass
@@ -35,4 +35,4 @@ class VKPost:
     
     author: VKUser | VKGroup | None = None
     
-    url: str
+    url: str = ""

@@ -95,10 +95,10 @@ class VKSession:
         
         group = result["group"]
         
-        if group.get("is_closed") == 1:
+        if group.is_closed == 1:
             return {"ok": False, "status": "closed", "group": group}
         
-        if group.get("is_closed") == 2:
+        if group.is_closed == 2:
             return {"ok": False, "status": "private", "group": group}
         
         return {"ok": True, "group": group}
@@ -117,7 +117,7 @@ class VKSession:
         group = result["group"]
         
         response = await self.request("wall.get", {
-            "owner_id": -group["id"],
+            "owner_id": -group.id,
             "count": count + 5,
             "extended": 1
         })
@@ -146,37 +146,3 @@ class VKSession:
 
 
 vk = VKSession()
-
-
-# ==================
-#   ТЕСТОВОЕ ГОВНО
-# ==================
-
-async def test():
-    group_ref = "https://vk.com/pso_pnv"
-    group_ref = "https://vk.com/club239462773"
-
-    async with VKSession(TOKEN, ssl=False) as vk1:
-        import json
-        i = 0
-        
-        i += 1
-        info = await vk1.get_group_info(group_ref)
-        with open(f"temp{i}.json", "w", encoding="utf-8") as file:
-            json.dump(info, file, indent=4, ensure_ascii=False)
-        
-        i += 1
-        info = await vk1.get_group_posts(group_ref, 3, True)
-        with open(f"temp{i}.json", "w", encoding="utf-8") as file:
-            json.dump(info, file, indent=4, ensure_ascii=False)
-        
-        # i += 1
-        # info = await vk1.get_new_posts(group_ref, 515500)        
-        # with open(f"temp{i}.json", "w", encoding="utf-8") as file:
-        #     json.dump(info, file, indent=4, ensure_ascii=False)
-        
-        
-        
-
-if __name__ == "__main__":
-    asyncio.run(test())

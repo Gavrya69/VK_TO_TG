@@ -1,9 +1,8 @@
-import time
-
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.vk.client import vk
+from services.vk.models import VKPost, VKUser, VKGroup
 from database.db import add_chat_admin, delete_chat_admins
 
 
@@ -29,20 +28,22 @@ async def sync_chat_admins(
 
 
 # TODO: (Отформатировать информацию как цитату, добавить гиперссылку на автора)
-def format_post(post: dict) -> str:
+def format_post(post: VKPost) -> str:
     parts = []
     
-    struct_time = time.localtime(post["date"])
-    formatted_time = time.strftime("%d.%m.%Y %H:%M:%S", struct_time) 
+    formatted_time = post.date.strftime("%d.%m.%Y %H:%M:%S") 
     parts.append(f"📅 Дата: {formatted_time}")
     
-    author = post.get("author_info")
-    if author:
-        parts.append(f"👤 Автор: {author['first_name']} {author['last_name']}")
-        
-    parts.append(f"🔗 Ссылка: https://vk.com/wall{post['from_id']}_{post['id']}")
+    if post.author and post.author.id != abs(post.owner_id):
+        if isinstance(post.author, VKUser):
+            parts.append(f"👤 Автор: {post.author.first_name} {post.author.last_name}")
+        elif isinstance(post.author, VKGroup):
+            parts.append(f"👥 Автор: {post.author.name}")
+
+    parts.append(f"🔗 Ссылка: {post.url}")
     
-    parts.append("")
-    parts.append(post["text"])
+    if post.text:
+        parts.append("")
+        parts.append(post.text)
     
     return "\n".join(parts)
