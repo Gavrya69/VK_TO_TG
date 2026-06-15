@@ -143,6 +143,20 @@ class VKSession:
         })
         
         return {"ok": True, "posts": posts}
+    
+    
+    async def get_new_posts(self, ref: str, last_post_id: int):
+        result = await self.get_group_posts(ref=ref, count=20, with_pinned=True)
+        
+        if not result["ok"]:
+            return result
+        
+        posts = result["posts"]
+        new_posts = [post for post in posts if post.id > last_post_id]
+        
+        new_posts.sort(key=lambda x: x.id)
+        
+        return {"ok": True, "posts": new_posts}
 
 
 vk = VKSession()

@@ -204,7 +204,6 @@ async def process_binding(message: Message, state: FSMContext):
                 vk_group_id=group.id,
                 name=group.name,
                 screen_name=group.screen_name,
-                last_post_id=last_post_id,
             )
         
         binding = await get_binding(session=session, vk_group_id=group.id, telegram_chat_id=chat_id)
@@ -213,6 +212,7 @@ async def process_binding(message: Message, state: FSMContext):
                 session=session,
                 vk_group_id=group.id,
                 telegram_chat_id=chat_id,
+                last_post_id=last_post_id,
             )
             await message.answer(
                 "Привязка успешно создана. Желаете спарсить посты?",

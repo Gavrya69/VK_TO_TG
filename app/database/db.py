@@ -29,13 +29,11 @@ async def add_group(
     vk_group_id: int, 
     name: str,
     screen_name: str,
-    last_post_id: int,
 ):
     group = Group(
         vk_group_id=vk_group_id,
         name=name,
         screen_name=screen_name,
-        last_post_id=last_post_id,
     )
 
     session.add(group)
@@ -53,6 +51,16 @@ async def get_group(
     )
     
     return result.scalar_one_or_none()
+
+
+async def get_groups(
+    session: AsyncSession
+):
+    result = await session.execute(
+        select(Group)
+    )
+    
+    return result.scalars().all()
 
 
 # --------------------
@@ -184,6 +192,26 @@ async def get_bindings_with_groups(
 
     return result.all()
 
+
+async def update_binding_last_post_id(
+    session: AsyncSession,
+    vk_group_id: int,
+    telegram_chat_id: int,
+    last_post_id: int,
+):
+    result = await session.execute(
+        select(Binding).where(
+            Binding.vk_group_id == vk_group_id,
+            Binding.telegram_chat_id == telegram_chat_id,
+        )
+    )
+    
+    binding = result.scalar_one_or_none()
+    
+    if binding:
+        binding.last_post_id = last_post_id
+        await session.commit()
+
 # --------------------
 # CHAT ADMINS
 # --------------------
@@ -234,12 +262,12 @@ async def is_chat_admin(
     chat_id: int,
     user_id: int,
 ) -> bool:
-    stmt = select(ChatAdmins).where(
-        ChatAdmins.chat_id == chat_id,
-        ChatAdmins.user_id == user_id,
-    )
-    
-    result = await session.execute(stmt)
+
+    result = await session.execute(
+        select(ChatAdmins).where(
+            ChatAdmins.chat_id == chat_id,
+            ChatAdmins.user_id == user_id,
+    ))
 
     return result.scalar_one_or_none() is not None
 

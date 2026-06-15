@@ -16,7 +16,6 @@ class Group(Base):
     vk_group_id: Mapped[int] = mapped_column(Integer)
     name: Mapped[str] = mapped_column(String)
     screen_name: Mapped[str] = mapped_column(String)
-    last_post_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
     
 class Chat(Base):

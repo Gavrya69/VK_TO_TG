@@ -11,15 +11,13 @@ from handlers.commands import router as commands_router
 
 from database.db import init_db
 from services.vk.client import vk
-
-
-logger = logging.getLogger(__name__)
+from services.vk.watcher import poll_vk
 
 
 async def startup():
     bot = Bot(token=os.getenv("TOKEN"))
     dp = Dispatcher(storage=MemoryStorage())
-
+    
     dp.include_router(commands_router)
     dp.include_router(callbacks_router)
     
@@ -27,21 +25,19 @@ async def startup():
     
     @dp.startup()
     async def on_startup() -> None:
-        # logger.info("Start.")
         await vk.start()
-        
+        asyncio.create_task(poll_vk(bot))
+
 
     @dp.shutdown()
     async def on_shutdown() -> None:
         await vk.close()
-        # logger.info("Exit.")
-
+    
     await dp.start_polling(bot)
 
 
 def main():
     load_dotenv()
-    # logging.basicConfig(level=logging.DEBUG)
     asyncio.run(startup())
 
 
