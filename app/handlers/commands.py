@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
-from services.vk import vk
+from services.vk.client import vk
 from keyboards.menu import get_private_main_menu, get_public_main_menu
 from keyboards.buttons import get_close_button
 from services.tg import format_post
@@ -49,7 +49,7 @@ async def cmd_help(message: Message):
 
 
 @router.message(Command("get_posts"))
-async def cmd_parse_group(message: Message):
+async def cmd_get_posts(message: Message):
     args = message.text.split(maxsplit=2)
     if len(args) <= 1:
         await message.answer(

@@ -16,7 +16,7 @@ from keyboards.buttons import get_back_button
 from handlers.states import GroupControl
 
 from services.tg import sync_chat_admins, format_post
-from services.vk import vk
+from services.vk.client import vk
 from utils import split_post
 
 from database.db import (

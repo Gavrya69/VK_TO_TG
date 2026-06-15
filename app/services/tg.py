@@ -3,7 +3,7 @@ import time
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.vk import vk
+from services.vk.client import vk
 from database.db import add_chat_admin, delete_chat_admins
 
 

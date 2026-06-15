@@ -10,7 +10,7 @@ from handlers.callbacks import router as callbacks_router
 from handlers.commands import router as commands_router
 
 from database.db import init_db
-from services.vk import vk
+from services.vk.client import vk
 
 
 logger = logging.getLogger(__name__)

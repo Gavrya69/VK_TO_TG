@@ -228,6 +228,21 @@ async def delete_chat_admins(
     )
     await session.commit()
 
+
+async def is_chat_admin(
+    session: AsyncSession,
+    chat_id: int,
+    user_id: int,
+) -> bool:
+    stmt = select(ChatAdmins).where(
+        ChatAdmins.chat_id == chat_id,
+        ChatAdmins.user_id == user_id,
+    )
+    
+    result = await session.execute(stmt)
+
+    return result.scalar_one_or_none() is not None
+
 # --------------------
 # OTHER
 # --------------------
