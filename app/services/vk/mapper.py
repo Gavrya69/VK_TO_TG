@@ -72,6 +72,19 @@ def map_posts(raw: dict) -> list[VKPost]:
             groups=groups,
         )
         
+        photos = []
+        for attachment in item.get("attachments", []):
+            if attachment.get("type") != "photo":
+                continue
+            
+            photo = attachment["photo"]
+            
+            if photo.get("orig_photo"):
+                photos.append(photo["orig_photo"]["url"])
+            else:
+                largest = max(photo["sizes"], key=lambda x: x["width"] * ["height"])
+                photos.append(largest["url"])
+            
         posts.append(
             VKPost(
                 id=item["id"],
@@ -84,6 +97,8 @@ def map_posts(raw: dict) -> list[VKPost]:
                 from_id=from_id,
                 
                 author=author,
+                
+                photos=photos,
                 
                 url=f"https://vk.com/wall{item['owner_id']}_{item['id']}",
             )

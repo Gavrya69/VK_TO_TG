@@ -1,6 +1,6 @@
 from aiogram import Router
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message
+from aiogram.types import Message, InputMediaPhoto
 
 from services.vk.client import vk
 from keyboards.menu import get_private_main_menu, get_public_main_menu
@@ -87,13 +87,30 @@ async def cmd_get_posts(message: Message):
         
         for post in posts:
             text = format_post(post)
-            chunks = split_post(text)
             
-            for chunk in chunks:
-                await message.answer(
-                    chunk,
-                )
+            if post.photos:
+                chunks = split_post(text, first_limit=1024)
+                
+                media = ([
+                    InputMediaPhoto(media=post.photos[0], caption=chunks[0])]
+                + [
+                    InputMediaPhoto(media=p)
+                    for p in post.photos[1:10]
+                ])
+                
+                await message.answer_media_group(media)
+                
+                for chunk in chunks[1:]:
+                    await message.answer(chunk)
+                
+            else:
+                chunks = split_post(text)
+                
+                for chunk in chunks:
+                    await message.answer(chunk)
+                    
         await loading_msg.delete()
+        
     else:
         await loading_msg.edit_text(
             f"Ошибка: {result['status']}",

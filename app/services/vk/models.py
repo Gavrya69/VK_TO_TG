@@ -35,4 +35,6 @@ class VKPost:
     
     author: VKUser | VKGroup | None = None
     
+    photos: list[dict] | None = None
+    
     url: str = ""
