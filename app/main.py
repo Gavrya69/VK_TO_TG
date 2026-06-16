@@ -15,7 +15,7 @@ from services.vk.watcher import poll_vk
 
 
 async def startup():
-    bot = Bot(token=os.getenv("TOKEN"))
+    bot = Bot(token=os.getenv("TG_TOKEN"))
     dp = Dispatcher(storage=MemoryStorage())
     
     dp.include_router(commands_router)

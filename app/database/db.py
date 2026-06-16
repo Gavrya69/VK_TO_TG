@@ -1,4 +1,4 @@
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from database.models import Base, Group, Chat, Binding, ChatAdmins
@@ -241,6 +241,18 @@ async def get_pending_bindings(
     )
     
     return result.scalars().all()
+
+
+async def get_min_last_post_id(
+    session,
+    vk_group_id: int,
+) -> int | None:
+    result = await session.execute(
+        select(func.min(Binding.last_post_id))
+        .where(Binding.vk_group_id == vk_group_id)
+    )
+
+    return result.scalar_one_or_none()
 
 # --------------------
 # CHAT ADMINS

@@ -5,6 +5,7 @@ from database.db import (
     SessionLocal,
     get_groups,
     get_bindings_by_group,
+    get_min_last_post_id,
     update_binding_last_post_id,
     update_group_last_post_id,
 )
@@ -19,9 +20,14 @@ async def poll_vk(bot):
                 groups = await get_groups(session)
                 
                 for group in groups:
+                    min_last_post_id = await get_min_last_post_id(
+                        session=session,
+                        vk_group_id=group.vk_group_id
+                    )
+                    
                     result = await vk.get_new_posts(
                         ref=group.screen_name,
-                        last_post_id=group.last_post_id
+                        last_post_id=min_last_post_id
                     )
                     
                     if not result["ok"]:
@@ -38,10 +44,10 @@ async def poll_vk(bot):
                     )
                     
                     for binding in bindings:
-                        binding_posts = [post for post in posts if {
-                            binding.last_post_id is None or
-                            post.id > binding.last_post_id
-                        }]
+                        binding_posts = [post for post in posts if 
+                            binding.last_post_id is None
+                            or post.id > binding.last_post_id
+                        ]
                         
                         if not binding_posts:
                             continue

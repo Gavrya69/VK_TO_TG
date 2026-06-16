@@ -82,7 +82,7 @@ def map_posts(raw: dict) -> list[VKPost]:
             if photo.get("orig_photo"):
                 photos.append(photo["orig_photo"]["url"])
             else:
-                largest = max(photo["sizes"], key=lambda x: x["width"] * ["height"])
+                largest = max(photo["sizes"], key=lambda x: x["width"] * x["height"])
                 photos.append(largest["url"])
             
         posts.append(
