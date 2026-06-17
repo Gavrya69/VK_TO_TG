@@ -12,7 +12,7 @@ from keyboards.menu import (
     get_parse_menu,
 )
 
-from keyboards.buttons import get_back_button
+from keyboards.buttons import get_back_button, get_close_button
 from handlers.states import GroupControl
 
 from services.tg import sync_chat_admins, send_post
@@ -28,7 +28,7 @@ from database.db import (
     get_bindings_with_groups,
     delete_binding,
     get_chats,
-    delete_chat_admins,
+    delete_chat,
     add_chat,
     get_chats_by_admin,
     get_chat,
@@ -278,11 +278,15 @@ async def process_parsing(message: Message, state: FSMContext):
         for post in posts:            
             await send_post(
                 bot=message.bot,
-                chat_id=message.chat.id,
+                chat_id=chat_id,
                 post=post
             )
-                
+        
         await loading_msg.delete()
+        await message.answer(
+            text="Посты успешно отправлены!",
+            reply_markup=get_back_button("main_menu")
+        )
         
     else:
         await loading_msg.edit_text(
@@ -344,12 +348,11 @@ async def del_binding(callback: CallbackQuery):
     
 @router.my_chat_member()
 async def on_bot_added(event: ChatMemberUpdated, bot):
-    
     chat_id = event.chat.id
     
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
-
+        
         if not chat:
             chat = await add_chat(
                 session=session,
@@ -357,11 +360,10 @@ async def on_bot_added(event: ChatMemberUpdated, bot):
                 title=event.chat.title or "unknown",
                 chat_type=event.chat.type,
             )
-            
-        old = event.old_chat_member.status
+        
         new = event.new_chat_member.status
-    
-        if old in ("left", "kicked") and new in ("member", "administrator"):
+        
+        if new in ("member", "administrator"):
             await asyncio.sleep(2) # for sync
             await sync_chat_admins(
                 bot=bot,
@@ -370,4 +372,7 @@ async def on_bot_added(event: ChatMemberUpdated, bot):
             )
         elif new in ("left", "kicked"):
             await asyncio.sleep(2) # for sync
-            await delete_chat_admins(session=session, chat_id=chat_id)
+            await delete_chat(
+                session=session,
+                chat_id=chat_id,
+            )

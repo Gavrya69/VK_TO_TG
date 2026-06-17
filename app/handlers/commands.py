@@ -120,7 +120,7 @@ async def cmd_parse_group(message: Message):
     
     if result["ok"]:
         posts = result["posts"]
-        pinned_posts = [post for post in posts if post.get("is_pinned")]
+        pinned_posts = [post for post in posts if post.is_pinned]
         
         if not pinned_posts:        
             await loading_msg.edit_text(

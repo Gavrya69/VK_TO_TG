@@ -37,7 +37,7 @@ async def add_group(
         screen_name=screen_name,
         last_post_id=last_post_id,
     )
-
+    
     session.add(group)
     await session.commit()
     
@@ -82,7 +82,7 @@ async def update_group_last_post_id(
 
 async def add_chat(
     session: AsyncSession,
-chat_id: int,
+    chat_id: int,
     title: str,
     chat_type: str,
 ):
@@ -91,7 +91,7 @@ chat_id: int,
         title=title,
         chat_type=chat_type,
     )
-
+    
     session.add(chat)
     await session.commit()
     
@@ -108,19 +108,45 @@ async def get_chat(
     
     return result.scalar_one_or_none()
 
+
 async def get_chats(
     session: AsyncSession,
     chat_ids: list[int]
 ):
     if not chat_ids:
         return []
-
+    
     result = await session.execute(
         select(Chat).where(Chat.telegram_chat_id.in_(chat_ids))
     )
-
+    
     return result.scalars().all()
 
+
+async def delete_chat(
+    session: AsyncSession,
+    chat_id: int,
+):
+    await session.execute(
+        delete(Chat).where(
+            Chat.telegram_chat_id == chat_id
+        )
+    )
+    
+    await session.execute(
+        delete(ChatAdmins).where(
+            ChatAdmins.chat_id == chat_id
+        )
+    )
+    
+    await session.execute(
+        delete(Binding).where(
+            Binding.telegram_chat_id == chat_id
+        )
+    )
+    
+    await session.commit()
+    
 # --------------------
 # BINDINGS (VK -> TG)
 # --------------------
@@ -136,7 +162,7 @@ async def add_binding(
         telegram_chat_id=telegram_chat_id,
         last_post_id=last_post_id,
     )
-
+    
     session.add(binding)
     await session.commit()
     
@@ -202,7 +228,7 @@ async def get_bindings_with_groups(
         .join(Group, Binding.vk_group_id == Group.vk_group_id)
         .where(Binding.telegram_chat_id == telegram_chat_id)
     )
-
+    
     return result.all()
 
 
@@ -251,7 +277,7 @@ async def get_min_last_post_id(
         select(func.min(Binding.last_post_id))
         .where(Binding.vk_group_id == vk_group_id)
     )
-
+    
     return result.scalar_one_or_none()
 
 # --------------------
@@ -269,7 +295,7 @@ async def add_chat_admin(
         user_id=user_id,
         is_creator=is_creator,
     )
-
+    
     session.add(admin)
     await session.commit()
     
