@@ -5,7 +5,7 @@ from aiogram.types import Message, InputMediaPhoto
 from services.vk.client import vk
 from keyboards.menu import get_private_main_menu, get_public_main_menu
 from keyboards.buttons import get_close_button
-from services.tg import format_post
+from services.tg import format_post, send_post
 
 from database.db import (
     SessionLocal,
@@ -86,29 +86,12 @@ async def cmd_get_posts(message: Message):
             return
         
         for post in posts:
-            text = format_post(post)
-            
-            if post.photos:
-                chunks = split_post(text, first_limit=1024)
-                
-                media = ([
-                    InputMediaPhoto(media=post.photos[0], caption=chunks[0])]
-                + [
-                    InputMediaPhoto(media=p)
-                    for p in post.photos[1:10]
-                ])
-                
-                await message.answer_media_group(media)
-                
-                for chunk in chunks[1:]:
-                    await message.answer(chunk)
-                
-            else:
-                chunks = split_post(text)
-                
-                for chunk in chunks:
-                    await message.answer(chunk)
-                    
+            await send_post(
+                bot=message.bot,
+                chat_id=message.chat.id,
+                post=post
+            )
+        
         await loading_msg.delete()
         
     else:
@@ -147,13 +130,12 @@ async def cmd_parse_group(message: Message):
             return
         
         for post in pinned_posts:
-            text = format_post(post)
-            chunks = split_post(text)
-            
-            for chunk in chunks:
-                await message.answer(
-                    chunk,
-                )
+            await send_post(
+                bot=message.bot,
+                chat_id=message.chat.id,
+                post=post
+            )
+        
         await loading_msg.delete()
     else:
         await loading_msg.edit_text(

@@ -15,9 +15,8 @@ from keyboards.menu import (
 from keyboards.buttons import get_back_button
 from handlers.states import GroupControl
 
-from services.tg import sync_chat_admins, format_post
+from services.tg import sync_chat_admins, send_post
 from services.vk.client import vk
-from utils import split_post
 
 from database.db import (
     SessionLocal,
@@ -276,14 +275,12 @@ async def process_parsing(message: Message, state: FSMContext):
             )
             return
         
-        for post in posts:
-            text = format_post(post)
-            chunks = split_post(text)
-            
-            for chunk in chunks:
-                await message.answer(
-                    chunk,
-                )
+        for post in posts:            
+            await send_post(
+                bot=message.bot,
+                chat_id=message.chat.id,
+                post=post
+            )
                 
         await loading_msg.delete()
         

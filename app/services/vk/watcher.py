@@ -9,8 +9,7 @@ from database.db import (
     update_binding_last_post_id,
     update_group_last_post_id,
 )
-from services.tg import format_post
-from utils import split_post
+from services.tg import send_post
 
 
 async def poll_vk(bot):
@@ -53,15 +52,11 @@ async def poll_vk(bot):
                             continue
                         
                         for binding_post in binding_posts:
-                            text = format_post(binding_post)
-                            chunks = split_post(text)
-                            
-                            for chunk in chunks:
-                                await bot.send_message(
-                                    binding.telegram_chat_id,
-                                    chunk,
-                                )
-                            
+                            await send_post(
+                                bot=bot,
+                                chat_id=binding.telegram_chat_id,
+                                post=binding_post
+                            )
                             await update_binding_last_post_id(
                                 session=session,
                                 vk_group_id=binding.vk_group_id,
