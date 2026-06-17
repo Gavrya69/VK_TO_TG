@@ -112,12 +112,12 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     # TODO: Сделать гиперссылки на чаты и каналы
     async with SessionLocal() as session:
-        chats = await get_chats_by_admin(
+        chats_by_admin = await get_chats_by_admin(
             session=session,
             user_id=user_id,
         )
         
-        chat_ids = [c.tg_chat_id for c in chats]
+        chat_ids = [c.tg_chat_id for c in chats_by_admin]
         
         chats = await get_chats(
             session=session,

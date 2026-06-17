@@ -38,9 +38,13 @@ def get_my_chats_menu(chats: list=None):
     keyboard = []
     
     for c in chats:
+        if c.chat_type == "channel":
+            symbol = "📢"
+        elif c.chat_type == "group":
+            symbol = "💬"
         keyboard.append([
             InlineKeyboardButton(
-                text=f"TG {c.title}",
+                text=f"{symbol} {c.title}",
                 callback_data=f"chat_menu:{c.tg_chat_id}"
             )
         ])
