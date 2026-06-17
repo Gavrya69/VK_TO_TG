@@ -41,7 +41,7 @@ def get_my_chats_menu(chats: list=None):
         keyboard.append([
             InlineKeyboardButton(
                 text=f"TG {c.title}",
-                callback_data=f"chat_menu:{c.telegram_chat_id}"
+                callback_data=f"chat_menu:{c.tg_chat_id}"
             )
         ])
     

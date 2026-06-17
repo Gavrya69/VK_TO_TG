@@ -15,7 +15,7 @@ from keyboards.menu import (
 from keyboards.buttons import get_back_button, get_close_button
 from handlers.states import GroupControl
 
-from services.tg import sync_chat_admins, send_post
+from services.tg import sync_chat_admins, send_post, update_user_chats
 from services.vk.client import vk
 
 from database.db import (
@@ -94,7 +94,7 @@ async def chat_menu(callback: CallbackQuery, state: FSMContext):
     async with SessionLocal() as session:
         bindings = await get_bindings_by_chat(
             session=session,
-            telegram_chat_id=chat_id,
+            tg_chat_id=chat_id,
         )
     # print(gid.vk_group_id for gid in bindings])
     # TODO: Сделать гиперссылки на группы
@@ -116,11 +116,21 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
             session=session,
             user_id=user_id,
         )
-        chat_ids = [c.chat_id for c in chats]
+        
+        chat_ids = [c.tg_chat_id for c in chats]
+        
         chats = await get_chats(
             session=session,
             chat_ids=chat_ids
         )
+        
+        await update_user_chats(
+            bot=callback.bot,
+            session=session,
+            db_chats=chats
+        )
+        
+
         
     await callback.message.edit_text(
         f"Ваши каналы: {len(chats)}.",
@@ -206,12 +216,12 @@ async def process_binding(message: Message, state: FSMContext):
                 last_post_id=last_post_id
             )
         
-        binding = await get_binding(session=session, vk_group_id=group.id, telegram_chat_id=chat_id)
+        binding = await get_binding(session=session, vk_group_id=group.id, tg_chat_id=chat_id)
         if not binding:
             await add_binding(
                 session=session,
                 vk_group_id=group.id,
-                telegram_chat_id=chat_id,
+                tg_chat_id=chat_id,
                 last_post_id=last_post_id,
             )
             await message.answer(
@@ -302,7 +312,7 @@ async def del_binding_menu(callback: CallbackQuery):
     async with SessionLocal() as session:
         bindings = await get_bindings_with_groups(
             session=session,
-            telegram_chat_id=chat_id,
+            tg_chat_id=chat_id,
         )
         
     if bindings:
@@ -325,11 +335,11 @@ async def del_binding(callback: CallbackQuery):
         await delete_binding(
             session=session,
             vk_group_id=vk_group_id,
-            telegram_chat_id=chat_id,
+            tg_chat_id=chat_id,
         )
         bindings = await get_bindings_with_groups(
             session=session,
-            telegram_chat_id=chat_id,
+            tg_chat_id=chat_id,
         )
 
     if bindings:
@@ -349,7 +359,7 @@ async def del_binding(callback: CallbackQuery):
 @router.my_chat_member()
 async def on_bot_added(event: ChatMemberUpdated, bot):
     chat_id = event.chat.id
-    
+
     async with SessionLocal() as session:
         chat = await get_chat(session, chat_id)
         

@@ -27,8 +27,8 @@ async def startup():
     async def on_startup() -> None:
         await vk.start()
         asyncio.create_task(poll_vk(bot))
-
-
+    
+    
     @dp.shutdown()
     async def on_shutdown() -> None:
         await vk.close()

@@ -14,7 +14,7 @@ class Group(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     
     vk_group_id: Mapped[int] = mapped_column(Integer,  unique=True)
-    name: Mapped[str] = mapped_column(String)
+    title: Mapped[str] = mapped_column(String)
     screen_name: Mapped[str] = mapped_column(String)
     last_post_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
@@ -24,7 +24,7 @@ class Chat(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
-    telegram_chat_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    tg_chat_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
     title: Mapped[str | None] = mapped_column(String, nullable=True)
     chat_type: Mapped[str] = mapped_column(String)
 
@@ -35,13 +35,13 @@ class Binding(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
     vk_group_id: Mapped[int] = mapped_column(Integer, index=True)
-    telegram_chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    tg_chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
     last_post_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint("vk_group_id", "telegram_chat_id"),
+        UniqueConstraint("vk_group_id", "tg_chat_id"),
     )
 
 
@@ -50,7 +50,7 @@ class ChatAdmins(Base):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     
-    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    tg_chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
     user_id: Mapped[int] = mapped_column(BigInteger, index=True)
     is_creator: Mapped[bool] = mapped_column(Boolean, default=False)
     

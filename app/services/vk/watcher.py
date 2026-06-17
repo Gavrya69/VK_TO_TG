@@ -54,13 +54,13 @@ async def poll_vk(bot):
                         for binding_post in binding_posts:
                             await send_post(
                                 bot=bot,
-                                chat_id=binding.telegram_chat_id,
+                                chat_id=binding.tg_chat_id,
                                 post=binding_post
                             )
                             await update_binding_last_post_id(
                                 session=session,
                                 vk_group_id=binding.vk_group_id,
-                                telegram_chat_id=binding.telegram_chat_id,
+                                tg_chat_id=binding.tg_chat_id,
                                 last_post_id=binding_post.id,
                             )
                             

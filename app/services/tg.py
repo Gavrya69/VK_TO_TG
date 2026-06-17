@@ -4,8 +4,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.vk.client import vk
 from services.vk.models import VKPost, VKUser, VKGroup
-from database.db import add_chat_admin, delete_chat_admins
+from database.db import add_chat_admin, delete_chat_admins, get_chat
 from utils import split_post
+
+
+async def update_user_chats(
+    bot,
+    session: AsyncSession,
+    db_chats: list[int],
+):
+    updated = 0
+    
+    for db_chat in db_chats:
+        try:
+            tg_chat = await bot.get_chat(db_chat.tg_chat_id)
+            
+            if db_chat.title != tg_chat.title:
+                db_chat.title = tg_chat.title
+                updated += 1
+            
+        except Exception:
+            continue
+        
+    if updated:
+        await session.commit()
+    
+    return updated
 
 
 async def sync_chat_admins(
