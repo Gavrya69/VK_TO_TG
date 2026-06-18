@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.vk.client import vk
 from services.vk.models import VKPost, VKUser, VKGroup
-from database.db import add_chat_admin, delete_chat_admins, get_chat
+from database.db import add_chat_admin, delete_chat_admins
 from utils import split_post
 
 

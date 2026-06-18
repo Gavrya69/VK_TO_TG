@@ -23,7 +23,8 @@ async def poll_vk(bot):
                         session=session,
                         vk_group_id=group.vk_group_id
                     )
-                    
+                    if min_last_post_id is None:
+                        continue
                     result = await vk.get_new_posts(
                         ref=group.screen_name,
                         last_post_id=min_last_post_id
