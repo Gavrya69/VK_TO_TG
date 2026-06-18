@@ -27,13 +27,13 @@ async def init_db():
 async def add_group(
     session: AsyncSession, 
     vk_group_id: int, 
-    title: str,
+    name: str,
     screen_name: str,
     last_post_id: int,
 ):
     group = Group(
         vk_group_id=vk_group_id,
-        title=title,
+        name=name,
         screen_name=screen_name,
         last_post_id=last_post_id,
     )
@@ -83,12 +83,12 @@ async def update_group_last_post_id(
 async def add_chat(
     session: AsyncSession,
     chat_id: int,
-    title: str,
+    name: str,
     chat_type: str,
 ):
     chat = Chat(
         tg_chat_id=chat_id,
-        title=title,
+        name=name,
         chat_type=chat_type,
     )
     
@@ -148,17 +148,17 @@ async def delete_chat(
     await session.commit()
 
 
-async def update_chat_title(
+async def update_chat_name(
     session: AsyncSession,
     chat_id: int,
-    title: str,
+    name: str,
 ):
     chat = await session.get(Chat, chat_id)
     
     if not chat:
         return
     
-    chat.title = title
+    chat.name = name
     await session.commit()
     
 # --------------------

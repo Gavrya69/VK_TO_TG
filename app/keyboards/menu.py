@@ -44,7 +44,7 @@ def get_my_chats_menu(chats: list=None):
             symbol = "💬"
         keyboard.append([
             InlineKeyboardButton(
-                text=f"{symbol} {c.title}",
+                text=f"{symbol} {c.name}",
                 callback_data=f"chat_menu:{c.tg_chat_id}"
             )
         ])

@@ -92,14 +92,21 @@ async def chat_menu(callback: CallbackQuery, state: FSMContext):
     chat_id = int(callback.data.split(":")[1])
 
     async with SessionLocal() as session:
-        bindings = await get_bindings_by_chat(
+        bindings = await get_bindings_with_groups(
             session=session,
             tg_chat_id=chat_id,
         )
-    # print(gid.vk_group_id for gid in bindings])
-    # TODO: Сделать гиперссылки на группы
+        
+        # TODO: Сделать гиперссылки на группы
+        if bindings:
+            group_list = "Группы, привязанные  к этому чату:"
+            for i, b in enumerate(bindings):
+                group_list += f"\n{i+1}. {b[1].name} (vk.com/{b[1].screen_name})"
+        else:
+            group_list = "К этому чату не привязаны группы."
+    
     await callback.message.edit_text(
-        f"Групп привязано к этому чату: {len(bindings)}.",
+        f"{group_list}",
         reply_markup=get_chat_menu(chat_id)
     )
     
@@ -130,8 +137,6 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
             db_chats=chats
         )
         
-
-        
     await callback.message.edit_text(
         f"Ваши каналы: {len(chats)}.",
         reply_markup=get_my_chats_menu(chats)
@@ -148,7 +153,7 @@ async def add_binding_menu(callback: CallbackQuery, state: FSMContext):
     await state.update_data(target_chat_id=chat_id)
 
     await callback.message.edit_text(
-        "Отправь VK ссылку (например vk.com/habr)",
+        "Отправь ссылку, ID или адрес группы.",
         reply_markup=get_back_button(chat_id)
     )
     
@@ -202,7 +207,7 @@ async def process_binding(message: Message, state: FSMContext):
             chat = await add_chat(
                 session=session,
                 chat_id=chat_id,
-                title=message.chat.title or "private",
+                name=message.chat.name or "private",
                 chat_type=message.chat.type,
             )
         
@@ -367,7 +372,7 @@ async def on_bot_added(event: ChatMemberUpdated, bot):
             chat = await add_chat(
                 session=session,
                 chat_id=chat_id,
-                title=event.chat.title or "unknown",
+                name=event.chat.name or "unknown",
                 chat_type=event.chat.type,
             )
         

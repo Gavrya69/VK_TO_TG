@@ -19,8 +19,8 @@ async def update_user_chats(
         try:
             tg_chat = await bot.get_chat(db_chat.tg_chat_id)
             
-            if db_chat.title != tg_chat.title:
-                db_chat.title = tg_chat.title
+            if db_chat.name != tg_chat.name:
+                db_chat.name = tg_chat.name
                 updated += 1
             
         except Exception:
