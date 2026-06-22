@@ -6,3 +6,4 @@ temp*
 .venv
 database.db
 TODO.md
+.vscode*

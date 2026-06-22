@@ -1,5 +1,5 @@
 import re
-
+from html import escape
 
 def extract_group_ref(value: str | int) -> str | int:
     if isinstance(value, int):
@@ -52,5 +52,3 @@ def split_post(text: str, limit: int=4096, first_limit: int|None=None) -> list[s
         chunks.append(text)
     
     return chunks
-
-

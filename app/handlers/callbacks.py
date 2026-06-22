@@ -1,4 +1,5 @@
 import asyncio
+from html import escape
 from aiogram import F, Router
 from aiogram.types import CallbackQuery, Message, ChatMemberUpdated, InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
@@ -97,19 +98,48 @@ async def chat_menu(callback: CallbackQuery, state: FSMContext):
             tg_chat_id=chat_id,
         )
         
-        # TODO: Сделать гиперссылки на группы
-        if bindings:
-            group_list = "Группы, привязанные  к этому чату:"
-            for i, b in enumerate(bindings):
-                group_list += f"\n{i+1}. {b[1].name} (vk.com/{b[1].screen_name})"
+        chat = await get_chat(session, chat_id)
+                
+        if chat.chat_type == "private":
+            header = "Ваши привязанные группы:"
         else:
-            group_list = "К этому чату не привязаны группы."
+            chat_type_names = {
+                "channel": "каналу",
+                "group": "группе",
+                "supergroup": "группе",
+            }
+            
+            chat_type = chat_type_names.get(chat.chat_type, "чату")
+            header = (f"Группы, привязанные к {chat_type} {chat.name}:")
+        
+        
+        if bindings:
+            lines = [header, ""]
+            
+            for i, (_, group) in enumerate(bindings, start=1):
+                lines.append(
+                    f'{i}. <a href="https://vk.com/{group.screen_name}">'
+                    f'{escape(group.name)}</a>'
+                )
+            
+            text = "\n".join(lines)
+        
+        else:
+            if chat.chat_type == "private":
+                text = "У вас нет привязанных групп."
+            else:
+                text = (
+                    f"К {chat.name} "
+                    f"не привязаны группы."
+                )
     
     await callback.message.edit_text(
-        f"{group_list}",
-        reply_markup=get_chat_menu(chat_id)
+        text,
+        reply_markup=get_chat_menu(chat_id),
+        parse_mode="HTML",
+        disable_web_page_preview=True,
     )
-    
+
     await callback.answer()
     
     
