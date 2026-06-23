@@ -114,7 +114,7 @@ async def chat_menu(callback: CallbackQuery, state: FSMContext):
         
         
         if bindings:
-            lines = [header, ""]
+            lines = [header]
             
             for i, (_, group) in enumerate(bindings, start=1):
                 lines.append(
@@ -260,13 +260,18 @@ async def process_binding(message: Message, state: FSMContext):
                 last_post_id=last_post_id,
             )
             await message.answer(
-                "Привязка успешно создана. Желаете спарсить посты?",
-                reply_markup=get_parse_menu(chat_id, group.id)
+                f'Группа <a href="https://vk.com/{group.screen_name}">{group.name}</a> успешно привязана.\n'
+                f"Желаете спарсить посты?",
+                reply_markup=get_parse_menu(chat_id, group.id),
+                parse_mode="HTML",
+                disable_web_page_preview=True,
             )
         else:
             await message.answer(
-                "Данная группа уже привязана к этому чату.",
-                reply_markup=get_back_button(chat_id)
+                f'Группа <a href="https://vk.com/{group.screen_name}">{group.name}</a> уже привязана.',
+                reply_markup=get_back_button(chat_id),
+                parse_mode="HTML",
+                disable_web_page_preview=True,
             )
             
     await state.clear()

@@ -144,7 +144,38 @@ async def cmd_parse_group(message: Message):
         )
 
 
-@router.message(Command("some_command"))
+@router.message(Command("asd"))
 async def cmd_some_command(message: Message):
-    # TODO: Тут будет какая-нибудь некст команда
-    pass
+    args = message.text.split(maxsplit=1)
+    
+    loading_msg = await message.answer(
+        "⏳ Подождите, начинаю работу...\nЭто сообщение удалится при завершении.",
+    )
+    
+    link = args[1]
+    
+    import json
+    from dataclasses import asdict
+    from utils import extract_group_ref
+    
+    i = 0
+    
+    i += 1
+    response = await vk.request("groups.getById", {
+            "group_id": extract_group_ref(link)
+        })
+    with open(f"temp{i}.json", "w", encoding="utf-8") as file:
+        json.dump(response, file, indent=4, ensure_ascii=False)
+    
+    i += 1
+    response = await vk.request("wall.get", {
+        "owner_id": link,
+        "count": 1,
+        "extended": 1
+    })
+    with open(f"temp{i}.json", "w", encoding="utf-8") as file:
+        json.dump(response, file, indent=4, ensure_ascii=False)
+    
+    
+    await message.answer("Done.", reply_markup=get_close_button())
+    await loading_msg.delete()
