@@ -1,23 +1,14 @@
 from aiogram import Router
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, InputMediaPhoto
+from aiogram.types import Message
 
+from database import db
 from services.vk.client import vk
+
 from keyboards.menu import get_private_main_menu, get_public_main_menu
 from keyboards.buttons import get_close_button
-from services.tg import format_post, send_post
 
-from database.db import (
-    SessionLocal,
-    add_group,
-    get_group,
-    add_binding,
-    get_binding,
-    add_chat,
-    get_chat,
-)
-
-from utils import split_post
+from services.tg import send_post
 
 
 router = Router()
@@ -27,14 +18,31 @@ router = Router()
 async def cmd_start(message: Message):
     chat_id = message.chat.id
     
+    async with db.SessionLocal() as session:
+        chat = await db.get_chat(session, chat_id)
+        if not chat:
+            chat = await db.add_chat(
+                session=session,
+                chat_id=chat_id,
+                title=message.chat.title or "private",
+                chat_type=message.chat.type,
+            )
+    
     if message.chat.type == "private":
         markup = get_private_main_menu(chat_id)
     else:
         markup = get_public_main_menu(chat_id)
-        
+    
     await message.answer(
         "Главное меню:",
         reply_markup=markup
+    )
+
+
+@router.message(Command("info"))
+async def cmd_help(message: Message):
+    await message.answer(
+        "Тут будет информация о боте\n"
     )
 
 
@@ -44,7 +52,6 @@ async def cmd_help(message: Message):
         "Доступные команды:\n"
         "/start - запуск\n"
         "/help - помощь\n\n"
-        "/add"
     )
 
 

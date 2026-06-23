@@ -31,17 +31,17 @@ def resolve_author(
 ):
     if not author_id:
         return None
-
+    
     if author_id < 0:
         group_raw = groups.get(abs(author_id))
         if group_raw:
             return map_group(group_raw)
         return None
-
+    
     user_raw = profiles.get(author_id)
     if user_raw:
         return map_user(user_raw)
-
+    
     return None
 
 
@@ -103,5 +103,5 @@ def map_posts(raw: dict) -> list[VKPost]:
                 url=f"https://vk.com/wall{item['owner_id']}_{item['id']}",
             )
         )
-
+    
     return posts

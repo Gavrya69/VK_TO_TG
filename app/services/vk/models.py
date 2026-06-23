@@ -4,7 +4,7 @@ from datetime import datetime
 
 @dataclass
 class VKGroup:
-    id: int
+    id: int # FIXME: Заменить "id" на "group_id"
     name: str
     screen_name: str
     is_closed: int = 0
@@ -14,7 +14,7 @@ class VKGroup:
 
 @dataclass
 class VKUser:
-    id: int
+    id: int # FIXME: Заменить "id" на "user_id"
     first_name: str
     last_name: str
     is_closed: bool
@@ -24,7 +24,7 @@ class VKUser:
 
 @dataclass
 class VKPost:
-    id: int
+    id: int # FIXME: Заменить "id" на "post_id"
     owner_id: int
     text: str
     date: int

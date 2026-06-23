@@ -17,7 +17,7 @@ async def update_user_chats(
     
     for db_chat in db_chats:
         try:
-            tg_chat = await bot.get_chat(db_chat.tg_chat_id)
+            tg_chat = await bot.get_chat(db_chat.chat_id)
             
             if db_chat.name != tg_chat.name:
                 db_chat.name = tg_chat.name
@@ -25,7 +25,7 @@ async def update_user_chats(
             
         except Exception:
             continue
-        
+    
     if updated:
         await session.commit()
     
@@ -74,7 +74,7 @@ def format_post(post: VKPost) -> str:
     
     return "\n".join(parts)
 
-
+# TODO: На всякий добавить сюда блок try/except
 async def send_post(
     bot: Bot,
     chat_id: int,

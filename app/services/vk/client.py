@@ -106,7 +106,7 @@ class VKSession:
     
     async def get_group_info(self, ref: str):
         return await self.check_group(ref)
-
+    
     
     async def get_group_posts(self, ref: str, count: int=1, with_pinned: bool=False):
         result = await self.check_group(ref)

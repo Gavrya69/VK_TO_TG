@@ -26,13 +26,13 @@ async def init_db():
 
 async def add_group(
     session: AsyncSession, 
-    vk_group_id: int, 
+    group_id: int, 
     name: str,
     screen_name: str,
     last_post_id: int,
 ):
     group = Group(
-        vk_group_id=vk_group_id,
+        group_id=group_id,
         name=name,
         screen_name=screen_name,
         last_post_id=last_post_id,
@@ -46,16 +46,16 @@ async def add_group(
 
 async def get_group(
     session: AsyncSession, 
-    vk_group_id: int
+    group_id: int
 ):
     result = await session.execute(
-        select(Group).where(Group.vk_group_id == vk_group_id)
+        select(Group).where(Group.group_id == group_id)
     )
     
     return result.scalar_one_or_none()
 
 
-async def get_groups(
+async def get_all_groups(
     session: AsyncSession
 ):
     result = await session.execute(
@@ -83,12 +83,12 @@ async def update_group_last_post_id(
 async def add_chat(
     session: AsyncSession,
     chat_id: int,
-    name: str,
+    title: str,
     chat_type: str,
 ):
     chat = Chat(
-        tg_chat_id=chat_id,
-        name=name,
+        chat_id=chat_id,
+        title=title,
         chat_type=chat_type,
     )
     
@@ -103,7 +103,7 @@ async def get_chat(
     chat_id: int
 ):
     result = await session.execute(
-        select(Chat).where(Chat.tg_chat_id == chat_id)
+        select(Chat).where(Chat.chat_id == chat_id)
     )
     
     return result.scalar_one_or_none()
@@ -117,7 +117,7 @@ async def get_chats(
         return []
     
     result = await session.execute(
-        select(Chat).where(Chat.tg_chat_id.in_(chat_ids))
+        select(Chat).where(Chat.chat_id.in_(chat_ids))
     )
     
     return result.scalars().all()
@@ -129,7 +129,7 @@ async def delete_chat(
 ):
     await session.execute(
         delete(Chat).where(
-            Chat.tg_chat_id == chat_id
+            Chat.chat_id == chat_id
         )
     )
     
@@ -141,39 +141,39 @@ async def delete_chat(
     
     await session.execute(
         delete(Binding).where(
-            Binding.tg_chat_id == chat_id
+            Binding.chat_id == chat_id
         )
     )
     
     await session.commit()
 
 
-async def update_chat_name(
+async def update_chat_title(
     session: AsyncSession,
     chat_id: int,
-    name: str,
+    title: str,
 ):
     chat = await session.get(Chat, chat_id)
     
     if not chat:
         return
     
-    chat.name = name
+    chat.title = title
     await session.commit()
-    
+
 # --------------------
 # BINDINGS (VK -> TG)
 # --------------------
 
 async def add_binding(
     session: AsyncSession,
-    vk_group_id: int,
-    tg_chat_id: int,
+    group_id: int,
+    chat_id: int,
     last_post_id: int,
 ):
     binding = Binding(
-        vk_group_id=vk_group_id,
-        tg_chat_id=tg_chat_id,
+        group_id=group_id,
+        chat_id=chat_id,
         last_post_id=last_post_id,
     )
     
@@ -185,13 +185,13 @@ async def add_binding(
 
 async def get_binding(
     session: AsyncSession, 
-    vk_group_id: int,
-    tg_chat_id: int
+    group_id: int,
+    chat_id: int
 ):
     result = await session.execute(
         select(Binding).where(
-            Binding.vk_group_id == vk_group_id, 
-            Binding.tg_chat_id == tg_chat_id)
+            Binding.group_id == group_id, 
+            Binding.chat_id == chat_id)
     )
     
     return result.scalar_one_or_none()
@@ -199,10 +199,11 @@ async def get_binding(
 
 async def get_bindings_by_group(
     session: AsyncSession,
-    vk_group_id: int,
+    group_id: int,
 ):
     result = await session.execute(
-        select(Binding).where(Binding.vk_group_id == vk_group_id)
+        select(Binding).where(
+            Binding.group_id == group_id)
     )
     
     return result.scalars().all()
@@ -210,52 +211,53 @@ async def get_bindings_by_group(
 
 async def get_bindings_by_chat(
     session: AsyncSession,
-    tg_chat_id: int,
+    chat_id: int,
 ):
     result = await session.execute(
-        select(Binding).where(Binding.tg_chat_id == tg_chat_id)
+        select(Binding).where(
+            Binding.chat_id == chat_id)
     )
     
     return result.scalars().all()
 
 
-async def delete_binding(
-    session: AsyncSession,
-    vk_group_id: int,
-    tg_chat_id: int,
-):
-    await session.execute(
-        delete(Binding).where(
-            Binding.vk_group_id == vk_group_id,
-            Binding.tg_chat_id == tg_chat_id,
-        )
-    )
-    await session.commit()
-
-
 async def get_bindings_with_groups(
     session: AsyncSession,
-    tg_chat_id: int
+    chat_id: int
 ):
     result = await session.execute(
         select(Binding, Group)
-        .join(Group, Binding.vk_group_id == Group.vk_group_id)
-        .where(Binding.tg_chat_id == tg_chat_id)
+        .join(Group, Binding.group_id == Group.group_id)
+        .where(Binding.chat_id == chat_id)
     )
     
     return result.all()
 
 
+async def delete_binding(
+    session: AsyncSession,
+    group_id: int,
+    chat_id: int,
+):
+    await session.execute(
+        delete(Binding).where(
+            Binding.group_id == group_id,
+            Binding.chat_id == chat_id,
+        )
+    )
+    await session.commit()
+
+
 async def update_binding_last_post_id(
     session: AsyncSession,
-    vk_group_id: int,
-    tg_chat_id: int,
+    group_id: int,
+    chat_id: int,
     last_post_id: int,
 ):
     result = await session.execute(
         select(Binding).where(
-            Binding.vk_group_id == vk_group_id,
-            Binding.tg_chat_id == tg_chat_id,
+            Binding.group_id == group_id,
+            Binding.chat_id == chat_id,
         )
     )
     
@@ -264,16 +266,16 @@ async def update_binding_last_post_id(
     if binding:
         binding.last_post_id = last_post_id
         await session.commit()
-        
-        
+
+
 async def get_pending_bindings(
     session: AsyncSession,
-    vk_group_id: int,
+    group_id: int,
     post_id: int,
 ):
     result = await session.execute(
         select(Binding).where(
-            Binding.vk_group_id == vk_group_id,
+            Binding.group_id == group_id,
             (
                 (Binding.last_post_id.is_(None)) | (Binding.last_post_id < post_id)
             )
@@ -285,11 +287,11 @@ async def get_pending_bindings(
 
 async def get_min_last_post_id(
     session,
-    vk_group_id: int,
+    group_id: int,
 ) -> int | None:
     result = await session.execute(
         select(func.min(Binding.last_post_id))
-        .where(Binding.vk_group_id == vk_group_id)
+        .where(Binding.group_id == group_id)
     )
     
     return result.scalar_one_or_none()

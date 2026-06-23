@@ -6,7 +6,7 @@ def get_private_main_menu(chat_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="👤 Этот чат", callback_data=f"chat_menu:{chat_id}")],
-            [InlineKeyboardButton(text="📋 Группы и каналы", callback_data="my_chats")],
+            [InlineKeyboardButton(text="📋 Мои группы и каналы", callback_data="my_chats")],
             [InlineKeyboardButton(text="ℹ️ Информация", callback_data="info")],
             [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")],
         ]
@@ -40,12 +40,13 @@ def get_my_chats_menu(chats: list=None):
     for c in chats:
         if c.chat_type == "channel":
             symbol = "📢"
-        elif c.chat_type == "group":
+        else:
             symbol = "💬"
+        
         keyboard.append([
             InlineKeyboardButton(
-                text=f"{symbol} {c.name}",
-                callback_data=f"chat_menu:{c.tg_chat_id}"
+                text=f"{symbol} {c.title}",
+                callback_data=f"chat_menu:{c.chat_id}"
             )
         ])
     
@@ -61,7 +62,7 @@ def get_delete_menu(chat_id: int, bindings: list=None, back_button: bool=True):
         keyboard.append([
             InlineKeyboardButton(
                 text=f"{b[1].name}",
-                callback_data=f"del_binding:{chat_id}:{b[0].vk_group_id}"
+                callback_data=f"del_binding:{chat_id}:{b[0].group_id}"
             )
         ])
         
@@ -73,7 +74,7 @@ def get_delete_menu(chat_id: int, bindings: list=None, back_button: bool=True):
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-def get_parse_menu(chat_id: int, vk_group_link: int):
+def get_parse_menu(chat_id: int, vk_group_link: int): # FIXME: Какого хуя тут "int"??? Разобраться
     keyboard = []
     
     keyboard.append([
