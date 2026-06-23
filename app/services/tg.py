@@ -1,4 +1,5 @@
 import asyncio
+import html
 
 from aiogram import Bot
 from aiogram.types import InputMediaPhoto
@@ -57,23 +58,24 @@ async def sync_chat_admins(
         await session.commit()
 
 
-# TODO: (Отформатировать информацию как цитату, добавить гиперссылку на автора)
 def format_post(post: VKPost) -> str:
     parts = []
     
     formatted_time = post.date.strftime("%d.%m.%Y %H:%M:%S") 
-    parts.append(f"📅 Дата: {formatted_time}")
+    parts.append(f"📅 <b>Дата:</b> {formatted_time}")
     
     if post.author and post.author.id != abs(post.owner_id):
         if isinstance(post.author, VKUser):
-            parts.append(f"👤 Автор: {post.author.first_name} {post.author.last_name}")
+            name = html.escape(f"{post.author.first_name} {post.author.last_name}")
         elif isinstance(post.author, VKGroup):
-            parts.append(f"👥 Автор: {post.author.name}")
+            name = html.escape(f"{post.author.name}")
+        parts.append(f"👤 <b>Автор:</b> <a href='{post.author.url}'>{name}</a>")
     
-    parts.append(f"🔗 Ссылка: {post.url}")
+    parts.append(f"🔗 <b><a href='{post.url}'>Ссылка на пост</a></b>")
+    parts.insert(0, "<blockquote>")
+    parts.append("</blockquote>")
     
     if post.text:
-        parts.append("")
         parts.append(post.text)
     
     return "\n".join(parts)
@@ -100,7 +102,8 @@ async def send_post(
                 try:
                     await bot.send_message(
                         chat_id=chat_id,
-                        text=chunk
+                        text=chunk,
+                        parse_mode="HTML"
                     )
                     break
                 except TelegramRetryAfter as e:
@@ -112,13 +115,17 @@ async def send_post(
     media = [
         InputMediaPhoto(
             media=media_raw[0],
-            caption=chunks[0]
+            caption=chunks[0],
+            parse_mode="HTML"
         )
     ]
     
     for photo in media_raw[1:10]:
         media.append(
-            InputMediaPhoto(media=photo)
+            InputMediaPhoto(
+                media=photo,
+                parse_mode="HTML"
+            )
         )
     
     if len(media) == 1:
@@ -127,7 +134,8 @@ async def send_post(
                 await bot.send_photo(
                     chat_id=chat_id,
                     photo=media[0].media,
-                    caption=media[0].caption
+                    caption=media[0].caption,
+                    parse_mode="HTML"
                 )
                 break
             except TelegramRetryAfter as e:
@@ -137,7 +145,7 @@ async def send_post(
             try:
                 await bot.send_media_group(
                     chat_id=chat_id,
-                    media=media
+                    media=media,
                 )
                 break
             except TelegramRetryAfter as e:
@@ -148,7 +156,8 @@ async def send_post(
             try:
                 await bot.send_message(
                     chat_id=chat_id,
-                    text=chunk
+                    text=chunk,
+                    parse_mode="HTML"
             )
                 break
             except TelegramRetryAfter as e:

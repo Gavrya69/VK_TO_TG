@@ -14,6 +14,7 @@ from keyboards.menu import (
     get_chat_menu,
     get_my_chats_menu,
     get_delete_menu,
+    get_suggest_parse_menu,
     get_parse_menu,
 )
 
@@ -243,7 +244,7 @@ async def process_binding(message: Message, state: FSMContext):
             await message.answer(
                 f'Группа \"<a href="https://vk.com/{group.screen_name}">{group.name}</a>\" успешно привязана.\n'
                 f"Желаете спарсить посты?",
-                reply_markup=get_parse_menu(chat_id, group.id),
+                reply_markup=get_suggest_parse_menu(chat_id, group.id),
                 parse_mode="HTML",
                 disable_web_page_preview=True,
             )
@@ -256,6 +257,27 @@ async def process_binding(message: Message, state: FSMContext):
             )
     
     await state.clear()
+
+
+@router.callback_query(F.data.startswith("parse_menu:"))
+async def parse_posts_menu(callback: CallbackQuery, state: FSMContext):
+    chat_id = int(callback.data.split(":")[1])
+    
+    async with db.SessionLocal() as session:
+        bindings = await db.get_bindings_with_groups(
+            session=session,
+            chat_id=chat_id,
+        )
+        
+    if bindings:
+        await callback.message.edit_text(
+            "С какой группы хотите спарсить посты?",
+            reply_markup=get_parse_menu(chat_id, bindings)
+        )
+    else:
+        await callback.answer("К этому чату не привязаны группы.")
+    
+    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("parse:"))

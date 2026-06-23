@@ -27,6 +27,7 @@ def get_chat_menu(chat_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="➕ Добавить VK группу", callback_data=f"add_binding:{chat_id}")],
+            [InlineKeyboardButton(text="📥 Спарсить посты", callback_data=f"parse_menu:{chat_id}")],
             [InlineKeyboardButton(text="🗑️ Удалить VK группу", callback_data=f"del_binding_menu:{chat_id}")],
             [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_menu")],
         ]
@@ -74,9 +75,28 @@ def get_delete_menu(chat_id: int, bindings: list=None, back_button: bool=True):
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-def get_parse_menu(chat_id: int, vk_group_link: int): # FIXME: Какого хуя тут "int"??? Разобраться
+def get_parse_menu(chat_id: int, bindings: list=None, back_button: bool=True):
     keyboard = []
     
+    for b in bindings:
+        keyboard.append([
+            InlineKeyboardButton(
+                text=f"{b[1].name}",
+                callback_data=f"parse:{chat_id}:{b[0].group_id}"
+            )
+        ])
+        
+    if back_button:
+        append_back_button(keyboard, chat_id)
+    else: 
+        append_close_button(keyboard)
+    
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_suggest_parse_menu (chat_id: int, vk_group_link: int): # FIXME: Какого хуя тут "int"??? Разобраться
+    keyboard = []
+    print(vk_group_link)
     keyboard.append([
         InlineKeyboardButton(
             text="📥 Спарсить посты", 
