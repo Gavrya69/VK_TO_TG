@@ -1,8 +1,12 @@
+import asyncio
+
 from aiogram import Bot
 from aiogram.types import InputMediaPhoto
+from aiogram.exceptions import TelegramRetryAfter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.vk.client import vk
+from services.downloader import downloader
 from services.vk.models import VKPost, VKUser, VKGroup
 from database.db import add_chat_admin, delete_chat_admins
 from utils import split_post
@@ -74,7 +78,7 @@ def format_post(post: VKPost) -> str:
     
     return "\n".join(parts)
 
-# TODO: На всякий добавить сюда блок try/except
+
 async def send_post(
     bot: Bot,
     chat_id: int,
@@ -82,39 +86,72 @@ async def send_post(
 ) -> None:
     text = format_post(post) or ""
     
-    media = []
+    media_raw = []
     
-    for photo in post.photos:
-        media.append(InputMediaPhoto(media=photo))
+    for url in post.photos:
+        try:
+            media_raw.append(await downloader.download_image(url))
+        except Exception as e:
+            print(f"Photo download failed: {url} -> {e}")
     
-    if not media:
+    if not media_raw:
         for chunk in split_post(text):
-            await bot.send_message(
-                chat_id=chat_id,
-                text=chunk
-            )
+            while True:
+                try:
+                    await bot.send_message(
+                        chat_id=chat_id,
+                        text=chunk
+                    )
+                    break
+                except TelegramRetryAfter as e:
+                    await asyncio.sleep(e.retry_after)
         return
     
     chunks = split_post(text, first_limit=1024) or [""]
-    media[0] = InputMediaPhoto(
-        media=media[0].media,
-        caption=chunks[0]
-    )
+    
+    media = [
+        InputMediaPhoto(
+            media=media_raw[0],
+            caption=chunks[0]
+        )
+    ]
+    
+    for photo in media_raw[1:10]:
+        media.append(
+            InputMediaPhoto(media=photo)
+        )
     
     if len(media) == 1:
-        await bot.send_photo(
-            chat_id=chat_id,
-            photo=media[0].media,
-            caption=media[0].caption
-        )
+        while True:
+            try:
+                await bot.send_photo(
+                    chat_id=chat_id,
+                    photo=media[0].media,
+                    caption=media[0].caption
+                )
+                break
+            except TelegramRetryAfter as e:
+                await asyncio.sleep(e.retry_after)
     else:
-        await bot.send_media_group(
-            chat_id=chat_id,
-            media=media
-        )
+        while True:
+            try:
+                await bot.send_media_group(
+                    chat_id=chat_id,
+                    media=media
+                )
+                break
+            except TelegramRetryAfter as e:
+                await asyncio.sleep(e.retry_after)
     
     for chunk in chunks[1:]:
-        await bot.send_message(
-            chat_id=chat_id,
-            text=chunk
-    )
+        while True:
+            try:
+                await bot.send_message(
+                    chat_id=chat_id,
+                    text=chunk
+            )
+                break
+            except TelegramRetryAfter as e:
+                await asyncio.sleep(e.retry_after)
+    
+    await asyncio.sleep(0.1)

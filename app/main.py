@@ -12,6 +12,7 @@ from handlers.commands import router as commands_router
 from database.db import init_db
 from services.vk.client import vk
 from services.vk.watcher import poll_vk
+from services.downloader import downloader
 
 
 async def startup():
@@ -26,12 +27,14 @@ async def startup():
     @dp.startup()
     async def on_startup() -> None:
         await vk.start()
+        await downloader.start()
         asyncio.create_task(poll_vk(bot))
     
     
     @dp.shutdown()
     async def on_shutdown() -> None:
         await vk.close()
+        await downloader.close()
     
     await dp.start_polling(bot)
 

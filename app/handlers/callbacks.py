@@ -98,7 +98,7 @@ async def chat_menu(callback: CallbackQuery, state: FSMContext):
             }
             chat_type = chat_type_names.get(chat.chat_type, "чату")
             
-            header = f"Группы, привязанные к {chat_type} {chat.title}:"
+            header = f"Группы, привязанные к {chat_type} \"<b>{chat.title}</b>\":"
         
         if bindings:
             lines = [header]
@@ -112,7 +112,7 @@ async def chat_menu(callback: CallbackQuery, state: FSMContext):
             if chat.chat_type == "private":
                 text = "У вас нет привязанных групп."
             else:
-                text = f"К {chat.title} не привязаны группы."
+                text = f"К {chat_type} \"<b>{chat.title}</b>\" не привязаны группы."
     
     await callback.message.edit_text(
         text,
@@ -241,7 +241,7 @@ async def process_binding(message: Message, state: FSMContext):
                 last_post_id=last_post_id,
             )
             await message.answer(
-                f'Группа <a href="https://vk.com/{group.screen_name}">{group.name}</a> успешно привязана.\n'
+                f'Группа \"<a href="https://vk.com/{group.screen_name}">{group.name}</a>\" успешно привязана.\n'
                 f"Желаете спарсить посты?",
                 reply_markup=get_parse_menu(chat_id, group.id),
                 parse_mode="HTML",
@@ -249,7 +249,7 @@ async def process_binding(message: Message, state: FSMContext):
             )
         else:
             await message.answer(
-                f'Группа <a href="https://vk.com/{group.screen_name}">{group.name}</a> уже привязана.',
+                f'Группа \"<a href="https://vk.com/{group.screen_name}">{group.name}</a>\" уже привязана.',
                 reply_markup=get_back_button(chat_id),
                 parse_mode="HTML",
                 disable_web_page_preview=True,
@@ -286,18 +286,19 @@ async def process_parsing(message: Message, state: FSMContext):
     except:
         await message.answer(
             "Нужно ввести число",
-            reply_markup=get_back_button() # FIXME: Указать аргумент куда бэкаться 
+            reply_markup=get_back_button(chat_id) # FIXME: Указать аргумент куда бэкаться 
         )
         return
     
     loading_msg = await message.answer(
-        "⏳ Подождите, начинаю работу...\nЭто сообщение удалится при завершении.",
+        "⏳ Подождите, начинаю парсить посты...",
     )
     
     result = await vk.get_group_posts(group_id, posts_count)
     
     if result["ok"]:
         posts = result["posts"]
+        posts.reverse()
         
         if not posts:        
             await loading_msg.edit_text(
@@ -306,7 +307,7 @@ async def process_parsing(message: Message, state: FSMContext):
             )
             return
         
-        for post in posts:            
+        for post in posts: 
             await send_post(
                 bot=message.bot,
                 chat_id=chat_id,

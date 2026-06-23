@@ -177,7 +177,7 @@ async def cmd_some_command(message: Message):
     i += 1
     response = await vk.request("wall.get", {
         "owner_id": link,
-        "count": 1,
+        "count": 100,
         "extended": 1
     })
     with open(f"temp{i}.json", "w", encoding="utf-8") as file:

@@ -1,20 +1,20 @@
 import re
-from html import escape
+
 
 def extract_group_ref(value: str | int) -> str | int:
     if isinstance(value, int):
         return value
-
+    
     value = value.strip()
-
+    
     if value.isdigit():
         return int(value)
-
+    
     value = value.replace("https://", "").replace("http://", "")
     value = re.sub(r"^(m\.)?vk\.(com|ru)/", "", value)
     value = value.split("?")[0]
     value = value.split("/")[0]
-
+    
     return value
 
 

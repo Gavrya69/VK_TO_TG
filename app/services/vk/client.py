@@ -108,7 +108,13 @@ class VKSession:
         return await self.check_group(ref)
     
     
-    async def get_group_posts(self, ref: str, count: int=1, with_pinned: bool=False):
+    async def get_group_posts(
+        self, 
+        ref: str, 
+        count: int=1, 
+        with_pinned: bool=False,
+        with_ads: bool=False,
+    ):
         result = await self.check_group(ref)
         
         if not result["ok"]:
@@ -118,7 +124,7 @@ class VKSession:
         
         response = await self.request("wall.get", {
             "owner_id": -group.id,
-            "count": count + 5,
+            "count": min(count + 10, 100),
             "extended": 1
         })
         
@@ -133,6 +139,18 @@ class VKSession:
         
         if not with_pinned:
             items = [p for p in items if not p.get("is_pinned")]
+            
+        if not with_ads:
+            valid_items = []
+            for p in items:
+                if p.get("marked_as_ads") == 1:
+                    continue
+                if "copy_history" in p and p["copy_history"]:
+                    if p["copy_history"][0].get("marked_as_ads") == 1:
+                        continue
+                valid_items.append(p)
+            
+            items = valid_items
         
         items = items[:count]
         
