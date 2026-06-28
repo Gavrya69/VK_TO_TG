@@ -7,7 +7,8 @@ def get_private_main_menu(chat_id):
         inline_keyboard=[
             [InlineKeyboardButton(text="👤 Этот чат", callback_data=f"chat_menu:{chat_id}")],
             [InlineKeyboardButton(text="📋 Мои группы и каналы", callback_data="my_chats")],
-            [InlineKeyboardButton(text="ℹ️ Информация", callback_data="info")],
+            [InlineKeyboardButton(text="ℹ️ О боте", callback_data="about")],
+            [InlineKeyboardButton(text="📖 Инструкция", callback_data="info")],
             [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")],
         ]
     )
@@ -17,18 +18,26 @@ def get_public_main_menu(chat_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="👤 Этот чат", callback_data=f"chat_menu:{chat_id}")],
-            [InlineKeyboardButton(text="ℹ️ Информация", callback_data="info")],
+            [InlineKeyboardButton(text="ℹ️ О боте", callback_data="about")],
+            [InlineKeyboardButton(text="📖 Инструкция", callback_data="info")],
             [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")],
         ]
     )
 
 
-def get_chat_menu(chat_id):
+def get_chat_menu(chat_id, bindings):
+    if bindings:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="➕ Привязать VK-группу", callback_data=f"add_binding:{chat_id}")],
+                [InlineKeyboardButton(text="📥 Перенести посты", callback_data=f"parse_menu:{chat_id}")],
+                [InlineKeyboardButton(text="🗑️ Отвязать VK-группу", callback_data=f"del_binding_menu:{chat_id}")],
+                [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_menu")],
+            ]
+        )
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="➕ Добавить VK группу", callback_data=f"add_binding:{chat_id}")],
-            [InlineKeyboardButton(text="📥 Спарсить посты", callback_data=f"parse_menu:{chat_id}")],
-            [InlineKeyboardButton(text="🗑️ Удалить VK группу", callback_data=f"del_binding_menu:{chat_id}")],
+            [InlineKeyboardButton(text="➕ Привязать VK-группу", callback_data=f"add_binding:{chat_id}")],
             [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_menu")],
         ]
     )
@@ -71,7 +80,7 @@ def get_delete_menu(chat_id: int, bindings: list=None, back_button: bool=True):
         append_back_button(keyboard, chat_id)
     else: 
         append_close_button(keyboard)
-
+    
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
@@ -94,12 +103,11 @@ def get_parse_menu(chat_id: int, bindings: list=None, back_button: bool=True):
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-def get_suggest_parse_menu (chat_id: int, vk_group_link: int): # FIXME: Какого хуя тут "int"??? Разобраться
+def get_suggest_parse_menu(chat_id: int, vk_group_link: int):
     keyboard = []
-    print(vk_group_link)
     keyboard.append([
         InlineKeyboardButton(
-            text="📥 Спарсить посты", 
+            text="📥 Перенести посты", 
             callback_data=f"parse:{chat_id}:{vk_group_link}"
         )
     ])

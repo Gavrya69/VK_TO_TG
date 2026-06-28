@@ -1,4 +1,4 @@
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
@@ -34,51 +34,101 @@ async def cmd_start(message: Message):
         markup = get_public_main_menu(chat_id)
     
     await message.answer(
-        "Главное меню:",
-        reply_markup=markup
+        "<b>🏠 Главное меню:</b>",
+        reply_markup=markup,
+        parse_mode="HTML"
+    )
+
+
+@router.message(Command("about"))
+async def cmd_about(message: Message):
+    await message.answer(
+        "🔄 <b>Автопостинг из VK в Telegram</b>\n\n"
+        "Данный бот занимается переносом публикаций из сообществ ВКонтакте в ваши Telegram-каналы и чаты.",
+        reply_markup=get_close_button(),
+        parse_mode="HTML",
     )
 
 
 @router.message(Command("info"))
-async def cmd_help(message: Message):
+async def cmd_info(message: Message):
     await message.answer(
-        "Тут будет информация о боте\n"
+        "🔄 <b>Инструкция по использованию бота</b>\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "👥 <b>Добавление бота</b>\n\n"
+        "• Добавьте бота в чат или канал\n"
+        "• Для каналов <b>обязательно</b> выдайте права администратора\n"
+        "• Бот автоматически привяжет администраторов к каналу\n"
+        "• Администраторы чата автоматически получают доступ к привязке и управлению группами\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "🔗 <b>Как привязать VK-группу</b>\n\n"
+        "1. Открой чат или канал, куда добавлен бот\n"
+        "2. Нажми Привязать VK-группу\n"
+        "3. Отправь ссылку на VK-группу или её короткое имя:\n"
+        "   <code>https://vk.com/public123456</code>\n"
+        "   <code>public123456</code>\n"
+        "4. Дождись подтверждения привязки\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "📥 <b>Как переносятся посты</b>\n\n"
+        "• Новые посты отправляются автоматически спустя несколько минут после публикации\n"
+        "• Поддерживаются фото и видео (видео размером до 50 мб)\n"
+        "• Длинные тексты разбиваются на части\n"
+        "• Закреплённые посты обрабатываются отдельно\n"
+        "• Перенос постов, помеченных как реклама, выключен по-умолчанию\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "⚙️ <b>Основные команды</b>\n"
+        "/start — главное меню\n"
+        "/about — информация о боте\n"
+        "/info — эта инструкция\n"
+        "/get_posts — ручной просмотр постов\n"
+        "/get_pinned — закреплённые посты\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "⚠️ <b>Важно</b>\n"
+        "• Бот работает только с открытыми VK-группами\n"
+        "• При изменении прав бота может потребоваться повторная настройка\n",
+        
+        reply_markup=get_close_button(),
+        parse_mode="HTML",
+        disable_web_page_preview=True,
     )
 
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):
     await message.answer(
-        "Доступные команды:\n"
-        "/start - запуск\n"
-        "/help - помощь\n\n"
+        "<b>Список команд:</b>\n\n"
+        "/help - список команд\n"
+        "/start - меню бота\n"
+        "/about - информация о боте\n",
+        parse_mode="HTML"
     )
 
 
 @router.message(Command("get_posts"))
 async def cmd_get_posts(message: Message):
     args = message.text.split(maxsplit=2)
-    if len(args) <= 1:
+    try:
+        link = args[1]
+        count = int(args[2])
+    except (IndexError, ValueError):
         await message.answer(
-            "Использование команды:\n/get_posts <ссылка на группу> <количество постов>",
-            reply_markup=get_close_button()
+            "<b>⚠️ Использование команды:</b>\n"
+            "<code>/get_posts [ссылка на группу] [количество постов]</code>",
+            reply_markup=get_close_button(),
+            parse_mode="HTML"
             )
         return
     
     loading_msg = await message.answer(
-        "⏳ Подождите, начинаю работу...\nЭто сообщение удалится при завершении.",
+        "⏳ <i>Подождите, начинаю переносить посты...</i>",
+        parse_mode="HTML"
     )
     
-    link = args[1]
-    try:
-        count = int(args[2])
-    except ValueError:
-        await message.answer(
-            "Использование команды:\n/get_posts <ссылка на группу> <количество постов>",
-            reply_markup=get_close_button()
-            )
-        return
-        
     count = max(1, min(count, 50))
     result = await vk.get_group_posts(link, count)
     
@@ -87,8 +137,10 @@ async def cmd_get_posts(message: Message):
         
         if not posts:        
             await loading_msg.edit_text(
-                f"В данной группе нет постов.",
-                reply_markup=get_close_button()
+                "🔍 <b>Посты не найдены.</b>"
+                "В данной группе отсутствуют публикации.",
+                reply_markup=get_close_button(),
+                parse_mode="HTML"
             )
             return
         
@@ -101,25 +153,36 @@ async def cmd_get_posts(message: Message):
         
         await loading_msg.delete()
         
+        await message.answer(
+            "✅ <b>Готово.</b>\n"
+            "Посты были успешно отправлены.",
+            reply_markup=get_close_button("main_menu"),
+            parse_mode="HTML"
+        )
     else:
         await loading_msg.edit_text(
-            f"Ошибка: {result['status']}",
-            reply_markup=get_close_button()
+            "⚠️ <b>Ошибка.</b>\n"
+            f"{result['status']}",
+            reply_markup=get_close_button("main_menu"),
+            parse_mode="HTML"
         )
 
 
 @router.message(Command("get_pinned"))
-async def cmd_parse_group(message: Message):
+async def cmd_get_pinned(message: Message):
     args = message.text.split(maxsplit=2)
     if len(args) <= 1:
         await message.answer(
-            "Использование команды:\n/get_pinned <ссылка на группу>",
-            reply_markup=get_close_button()
+            "<b>⚠️ Использование команды:</b>\n"
+            "<code>/get_pinned [ссылка на группу]</code>",
+            reply_markup=get_close_button(),
+            parse_mode="HTML"
             )
         return
     
     loading_msg = await message.answer(
-        "⏳ Подождите, начинаю работу...\nЭто сообщение удалится при завершении.",
+        "⏳ <i>Подождите, начинаю переносить посты...</i>",
+        parse_mode="HTML"
     )
     
     link = args[1]    
@@ -131,8 +194,10 @@ async def cmd_parse_group(message: Message):
         
         if not pinned_posts:        
             await loading_msg.edit_text(
-                f"В данной группе нет закрепленных постов.",
-                reply_markup=get_close_button()
+                "🔍 <b>Посты не найдены.</b>"
+                "В данной группе отсутствуют публикации.",
+                reply_markup=get_close_button(),
+                parse_mode="HTML"
             )
             return
         
@@ -144,10 +209,19 @@ async def cmd_parse_group(message: Message):
             )
         
         await loading_msg.delete()
+        
+        await message.answer(
+            "✅ <b>Готово.</b>\n"
+            "Посты были успешно отправлены.",
+            reply_markup=get_close_button("main_menu"),
+            parse_mode="HTML"
+        )
     else:
         await loading_msg.edit_text(
-            f"Ошибка: {result['status']}",
-            reply_markup=get_close_button()
+            "⚠️ <b>Ошибка.</b>\n"
+            f"{result['status']}",
+            reply_markup=get_close_button("main_menu"),
+            parse_mode="HTML"
         )
 
 
@@ -156,13 +230,12 @@ async def cmd_some_command(message: Message):
     args = message.text.split(maxsplit=1)
     
     loading_msg = await message.answer(
-        "⏳ Подождите, начинаю работу...\nЭто сообщение удалится при завершении.",
+        "⏳ Подождите, начинаю работу...\nЭто сообщение удалится при завершении."
     )
     
     link = args[1]
     
     import json
-    from dataclasses import asdict
     from utils import extract_group_ref
     
     i = 0
@@ -186,3 +259,12 @@ async def cmd_some_command(message: Message):
     
     await message.answer("Done.", reply_markup=get_close_button())
     await loading_msg.delete()
+
+
+@router.message(F.text.startswith("/"))
+async def unknown_command(message: Message):
+    await message.answer(
+        "⚠️ <b>Неизвестная команда.</b>\n"
+        "Используйте /help для открытия списка команд",
+        parse_mode="HTML"
+    )

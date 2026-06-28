@@ -27,11 +27,76 @@ from services.tg import sync_chat_admins, send_post, update_user_chats
 router = Router()
 
 
+@router.callback_query(F.data == "about")
+async def info_menu(callback: CallbackQuery):
+    await callback.message.edit_text(
+        "🔄 <b>Автопостинг VK → Telegram </b>\n\n"
+        
+        "Бот предназначен для автоматического переноса публикаций из VK-сообществ "
+        "вам, в ваши Telegram-чаты и каналы.\n\n"
+        
+        "📌 <b>Возможности:</b>\n"
+        "• Автоматический парсинг новых постов из VK\n"
+        "• Отправка текста, фото и видео в Telegram\n"
+        "• Поддержка нескольких привязанных групп\n"
+        "• Разделение постов на части при больших текстах\n"
+        "• Ручной просмотр постов и закреплённых записей из любых открытых групп\n"
+        "• Настройка привязок VK → Telegram",     
+        reply_markup=get_back_button("main_menu"),
+        parse_mode="HTML",
+    )
+    await callback.answer()
+
+
 @router.callback_query(F.data == "info")
 async def info_menu(callback: CallbackQuery):
     await callback.message.edit_text(
-        "Перенос постов из VK групп в Telegram каналы и чаты.",
-        reply_markup=get_back_button("main_menu")
+        "🔄 <b>Инструкция по использованию бота</b>\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "👥 <b>Добавление бота</b>\n\n"
+        "• Добавьте бота в чат или канал\n"
+        "• Для каналов <b>обязательно</b> выдайте права администратора\n"
+        "• Бот автоматически привяжет администраторов к каналу\n"
+        "• Администраторы чата автоматически получают доступ к привязке и управлению группами\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "🔗 <b>Как привязать VK-группу</b>\n\n"
+        "1. Открой чат или канал, куда добавлен бот\n"
+        "2. Нажми Привязать VK-группу\n"
+        "3. Отправь ссылку на VK-группу или её короткое имя:\n"
+        "   <code>https://vk.com/public123456</code>\n"
+        "   <code>public123456</code>\n"
+        "4. Дождись подтверждения привязки\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "📥 <b>Как переносятся посты</b>\n\n"
+        "• Новые посты отправляются автоматически спустя несколько минут после публикации\n"
+        "• Поддерживаются фото и видео (видео размером до 50 мб)\n"
+        "• Длинные тексты разбиваются на части\n"
+        "• Закреплённые посты обрабатываются отдельно\n"
+        "• Перенос постов, помеченных как реклама, выключен по-умолчанию\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "⚙️ <b>Основные команды</b>\n"
+        "/start — главное меню\n"
+        "/about — информация о боте\n"
+        "/info — эта инструкция\n"
+        "/get_posts — ручной просмотр постов\n"
+        "/get_pinned — закреплённые посты\n\n"
+        
+        "━━━━━━━━━━━━━━━\n"
+        "⚠️ <b>Важно</b>\n"
+        "• Бот работает только с открытыми VK-группами\n"
+        "• Настройки бота меняются <b>в зависимости от чата</b>\n"
+        "  - В <b>личных сообщениях</b> доступно управление всеми привязками (все чаты и каналы пользователя)\n"
+        "  - В <b>группах</b> бот управляет только этой конкретной группой (локальные настройки)\n"
+        "  - В <b>каналах</b> диалог с ботом невозможен — управление выполняется только через личные сообщения\n"
+        "• При изменении прав бота может потребоваться повторная настройка\n",
+        
+        reply_markup=get_back_button("main_menu"),
+        parse_mode="HTML",
+        disable_web_page_preview=True,
     )
     await callback.answer()
 
@@ -47,8 +112,9 @@ async def main_menu(callback: CallbackQuery, state: FSMContext):
         markup = get_public_main_menu(chat_id)
         
     await callback.message.edit_text(
-        "Главное меню:",
-        reply_markup=markup
+        "🏠 <b>Главное меню</b>",
+        reply_markup=markup,
+        parse_mode="HTML",
     )
     
     await callback.answer()
@@ -90,19 +156,19 @@ async def chat_menu(callback: CallbackQuery, state: FSMContext):
         chat = await db.get_chat(session, chat_id)
         
         if chat.chat_type == "private":
-            header = "Ваши привязанные группы:"
+            header = "⚙️ <b>Настройки этого чата</b>\n"
         else:
             chat_type_names = {
-                "channel": "каналу",
-                "group": "группе",
-                "supergroup": "группе",
+                "channel": "канала",
+                "group": "группы",
+                "supergroup": "группы",
             }
-            chat_type = chat_type_names.get(chat.chat_type, "чату")
+            chat_type = chat_type_names.get(chat.chat_type, "чата")
             
-            header = f"Группы, привязанные к {chat_type} \"<b>{chat.title}</b>\":"
+            header = f"⚙️ <b>Настройки {chat_type} «{chat.title}»</b>\n"
         
         if bindings:
-            lines = [header]
+            lines = [header, "🔗 <i>Привязанные VK-сообщества:</i>"]
             for i, (_, group) in enumerate(bindings, start=1):
                 lines.append(
                     f'{i}. <a href="https://vk.com/{group.screen_name}">'
@@ -110,14 +176,11 @@ async def chat_menu(callback: CallbackQuery, state: FSMContext):
                 )
             text = "\n".join(lines)
         else:
-            if chat.chat_type == "private":
-                text = "У вас нет привязанных групп."
-            else:
-                text = f"К {chat_type} \"<b>{chat.title}</b>\" не привязаны группы."
+            text = f"{header}\nℹ️ Пока <i>не привязано</i> ни одно VK-сообщество."
     
     await callback.message.edit_text(
         text,
-        reply_markup=get_chat_menu(chat_id),
+        reply_markup=get_chat_menu(chat_id, bindings),
         parse_mode="HTML",
         disable_web_page_preview=True,
     )
@@ -150,8 +213,10 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
         )
         
     await callback.message.edit_text(
-        f"Ваши подключенные каналы и группы:",
-        reply_markup=get_my_chats_menu(chats)
+        f"<b>Ваши подключенные каналы (📢) и группы (💬):</b>",
+        reply_markup=get_my_chats_menu(chats),
+        parse_mode="HTML",
+        disable_web_page_preview=True,
     )
     
     await callback.answer()
@@ -165,8 +230,11 @@ async def add_binding_menu(callback: CallbackQuery, state: FSMContext):
     await state.update_data(target_chat_id=chat_id)
     
     await callback.message.edit_text(
-        "Отправь ссылку, ID или адрес группы.",
-        reply_markup=get_back_button(chat_id)
+        "Отправьте ссылку, ID или короткий адрес группы VK.\n"
+        '(например, <i>"https://vk.com/club123"</i> или <i>"club123"</i>)',
+        reply_markup=get_back_button(chat_id),
+        parse_mode="HTML",
+        disable_web_page_preview=True,
     )
     
     await callback.answer()
@@ -182,27 +250,32 @@ async def process_binding(message: Message, state: FSMContext):
     if not result["ok"]:
         if result["status"] == "not_found":
             await message.answer(
-                "Группа не найдена.",
+                "🔍 <b>Группа не найдена.</b>"
+                "Проверьте правильность введенной ссылки или ID.",
                 reply_markup=get_back_button(chat_id)
             )
         elif result["status"] == "access_denied":
             await message.answer(
-                "Ошибка доступа к группе.",
+                "🚫 <b>Ошибка доступа к группе.</b>\n"
+                "У бота нет прав для просмотра этого сообщества.",
                 reply_markup=get_back_button(chat_id)
             )
         elif result["status"] == "unknown_error":
             await message.answer(
-                "Неизвестная ошибка.",
+                "⚠️ <b>Неизвестная ошибка.<b>\n"
+                "Что-то пошло не так...",
                 reply_markup=get_back_button(chat_id)
             )
         elif result["status"] == "private":
             await message.answer(
-                "Группа является приватной.",
+                "🔒 <b>Доступ ограничен</b>\n"
+                "Данное сообщество является приватным.",
                 reply_markup=get_back_button(chat_id)
             )
         elif result["status"] == "closed":
             await message.answer(
-                "Группа является закрытой.",
+                "🔒 <b>Доступ ограничен</b>\n"
+                "Данное сообщество является закрытым.",
                 reply_markup=get_back_button(chat_id)
             )
         await state.clear()
@@ -242,15 +315,15 @@ async def process_binding(message: Message, state: FSMContext):
                 last_post_id=last_post_id,
             )
             await message.answer(
-                f'Группа \"<a href="https://vk.com/{group.screen_name}">{group.name}</a>\" успешно привязана.\n'
-                f"Желаете спарсить посты?",
+                f'✅ Группа \"<i><a href="https://vk.com/{group.screen_name}">{group.name}</a></i>\" успешно привязана.\n'
+                f"Желаете перенести посты?",
                 reply_markup=get_suggest_parse_menu(chat_id, group.id),
                 parse_mode="HTML",
                 disable_web_page_preview=True,
             )
         else:
             await message.answer(
-                f'Группа \"<a href="https://vk.com/{group.screen_name}">{group.name}</a>\" уже привязана.',
+                f'ℹ️ Группа \"<i><a href="https://vk.com/{group.screen_name}">{group.name}</a></i>\" уже привязана.',
                 reply_markup=get_back_button(chat_id),
                 parse_mode="HTML",
                 disable_web_page_preview=True,
@@ -271,11 +344,11 @@ async def parse_posts_menu(callback: CallbackQuery, state: FSMContext):
         
     if bindings:
         await callback.message.edit_text(
-            "С какой группы хотите спарсить посты?",
+            "📥 С какой группы хотите перенести посты?",
             reply_markup=get_parse_menu(chat_id, bindings)
         )
     else:
-        await callback.answer("К этому чату не привязаны группы.")
+        await callback.answer("ℹ️ Сюда пока <i>не привязано</i> ни одно VK-сообщество.")
     
     await callback.answer()
 
@@ -290,7 +363,7 @@ async def parse_posts(callback: CallbackQuery, state: FSMContext):
     await state.update_data(group_id=group_id)
     
     await callback.message.edit_text(
-        "Сколько постов ты хочешь спарсить?",
+        "🔢 Сколько постов вы хотите перенести?",
         reply_markup=get_back_button(chat_id)
     )
     
@@ -307,13 +380,16 @@ async def process_parsing(message: Message, state: FSMContext):
         posts_count = int(message.text)
     except:
         await message.answer(
-            "Нужно ввести число",
-            reply_markup=get_back_button(chat_id) # FIXME: Указать аргумент куда бэкаться 
+            "❌ <b>Ошибка ввода.</b>\n"
+            "Необходимо ввести корректное число.",
+            reply_markup=get_back_button(chat_id),
+            parse_mode="HTML"
         )
         return
     
     loading_msg = await message.answer(
-        "⏳ Подождите, начинаю парсить посты...",
+        "⏳ <i>Подождите, начинаю переносить посты...</i>",
+        parse_mode="HTML"
     )
     
     result = await vk.get_group_posts(group_id, posts_count)
@@ -324,8 +400,10 @@ async def process_parsing(message: Message, state: FSMContext):
         
         if not posts:        
             await loading_msg.edit_text(
-                f"В данной группе нет постов.",
-                reply_markup=get_back_button("main_menu")
+                "🔍 <b>Посты не найдены.</b>"
+                "В данной группе отсутствуют публикации.",
+                reply_markup=get_back_button("main_menu"),
+                parse_mode="HTML"
             )
             return
         
@@ -339,14 +417,18 @@ async def process_parsing(message: Message, state: FSMContext):
         await loading_msg.delete()
         
         await message.answer(
-            text="Посты успешно отправлены!",
-            reply_markup=get_back_button("main_menu")
+            "✅ <b>Готово.</b>\n"
+            "Посты были успешно отправлены.",
+            reply_markup=get_back_button("main_menu"),
+            parse_mode="HTML"
         )
         
     else:
         await loading_msg.edit_text(
-            f"Ошибка: {result['status']}",
-            reply_markup=get_back_button("main_menu")
+            "⚠️ <b>Ошибка.</b>\n"
+            f"{result['status']}",
+            reply_markup=get_back_button("main_menu"),
+            parse_mode="HTML",
         )
 
 
@@ -362,11 +444,15 @@ async def del_binding_menu(callback: CallbackQuery):
         
     if bindings:
         await callback.message.edit_text(
-            "Какую группу хотите удалить?",
-            reply_markup=get_delete_menu(chat_id, bindings)
+            "🗑️ Какую VK-группу хотите отвязать?",
+            reply_markup=get_delete_menu(chat_id, bindings),
+            parse_mode="HTML"
         )
     else:
-        await callback.answer("К этому чату не привязаны группы.")
+        await callback.answer(
+            "ℹ️ Сюда пока <i>не привязана</i> на одна VK-группа.",
+            parse_mode="HTML",
+        )
     
     await callback.answer()
 
@@ -389,16 +475,18 @@ async def process_binding(callback: CallbackQuery):
     
     if bindings:
         await callback.message.edit_text(
-            "Какую группу хотите удалить?",
-            reply_markup=get_delete_menu(chat_id, bindings)
+            "🗑️ Какую VK-группу хотите отвязать?",
+            reply_markup=get_delete_menu(chat_id, bindings),
+            parse_mode="HTML"
         )
     else:
         await callback.message.edit_text(
-            "К этому чату не привязаны группы.",
-            reply_markup=get_delete_menu(chat_id, bindings)
+            "ℹ️ Сюда пока <i>не привязана</i> на одна VK-группа.",
+            reply_markup=get_delete_menu(chat_id, bindings),
+            parse_mode="HTML"
         )
     
-    await callback.answer("Удалено")
+    await callback.answer("✅ Удалено.")
 
 
 @router.my_chat_member()
