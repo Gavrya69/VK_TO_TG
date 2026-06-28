@@ -7,8 +7,8 @@ def get_private_main_menu(chat_id):
         inline_keyboard=[
             [InlineKeyboardButton(text="👤 Этот чат", callback_data=f"chat_menu:{chat_id}")],
             [InlineKeyboardButton(text="📋 Мои группы и каналы", callback_data="my_chats")],
-            [InlineKeyboardButton(text="ℹ️ О боте", callback_data="about")],
             [InlineKeyboardButton(text="📖 Инструкция", callback_data="info")],
+            [InlineKeyboardButton(text="ℹ️ О боте", callback_data="about")],
             [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")],
         ]
     )
@@ -18,8 +18,8 @@ def get_public_main_menu(chat_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="👤 Этот чат", callback_data=f"chat_menu:{chat_id}")],
-            [InlineKeyboardButton(text="ℹ️ О боте", callback_data="about")],
             [InlineKeyboardButton(text="📖 Инструкция", callback_data="info")],
+            [InlineKeyboardButton(text="ℹ️ О боте", callback_data="about")],
             [InlineKeyboardButton(text="❌ Закрыть", callback_data="close")],
         ]
     )

@@ -24,7 +24,11 @@ async def cmd_start(message: Message):
             chat = await db.add_chat(
                 session=session,
                 chat_id=chat_id,
-                title=message.chat.title or "private",
+                title=(
+                    message.chat.username 
+                    if message.chat.type == "private" 
+                    else message.chat.title
+                ),
                 chat_type=message.chat.type,
             )
     
