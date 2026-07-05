@@ -1,5 +1,6 @@
 import asyncio
 import html
+from zoneinfo import ZoneInfo
 
 from aiogram import Bot
 from aiogram.types import InputMediaPhoto
@@ -10,7 +11,10 @@ from services.vk.client import vk
 from services.downloader import downloader
 from services.vk.models import VKPost, VKUser, VKGroup
 from database.db import add_chat_admin, delete_chat_admins
-from utils import split_post
+from utils import split_post, format_vk_text
+
+
+MSK = ZoneInfo("Europe/Moscow")
 
 
 async def update_user_chats(
@@ -61,8 +65,8 @@ async def sync_chat_admins(
 def format_post(post: VKPost) -> str:
     parts = []
     
-    formatted_time = post.date.strftime("%d.%m.%Y %H:%M:%S") 
-    parts.append(f"📅 <b>Дата:</b> {formatted_time}")
+    formatted_time = post.date.astimezone(MSK).strftime("%d.%m.%Y %H:%M:%S")
+    parts.append(f"📅 <b>Дата (МСК):</b> {formatted_time}")
     
     if post.author and post.author.id != abs(post.owner_id):
         if isinstance(post.author, VKUser):

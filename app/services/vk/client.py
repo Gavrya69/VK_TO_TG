@@ -49,6 +49,7 @@ class VKSession:
         
         if params is None:
             params = {}
+        
         params.update({
             "access_token": self.token,
             "v": self.api_version
@@ -57,13 +58,21 @@ class VKSession:
         try:
             async with self.session.get(url, params=params) as resp:
                 data = await resp.json()
-
+                
                 if "error" in data:
-                    return {
-                        "ok": False,
-                        "error_code": data["error"]["error_code"],
-                    }
-
+                    error_code = data["error"].get("error_code")
+                    
+                    if error_code == 5:
+                        status = "access_denied"
+                    elif error_code == 6:
+                        status = "too_many_requests"
+                    elif error_code == 100:
+                        status = "not_found"
+                    else:
+                        status = "unknown_error"
+                    
+                    return {"ok": False, "status": status, "error_code": error_code,}
+                
                 return {"ok": True, "response": data["response"]}
             
         except aiohttp.ClientError:

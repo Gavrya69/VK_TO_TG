@@ -212,12 +212,19 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
             db_chats=chats
         )
         
-    await callback.message.edit_text(
-        f"<b>Ваши подключенные каналы (📢) и группы (💬):</b>",
-        reply_markup=get_my_chats_menu(chats),
-        parse_mode="HTML",
-        disable_web_page_preview=True,
-    )
+    if chats:
+        await callback.message.edit_text(
+            f"<b>Ваши подключенные каналы (📢) и группы (💬):</b>",
+            reply_markup=get_my_chats_menu(chats),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+    else:
+        await callback.answer(
+            "ℹ️ Вы пока <i>не добавляли</i> бота в каналы и группы.",
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
     
     await callback.answer()
 
@@ -247,36 +254,74 @@ async def process_binding(message: Message, state: FSMContext):
     link = message.text
     
     result = (await vk.get_group_info(link))
+    
     if not result["ok"]:
-        if result["status"] == "not_found":
+        status = result.get("status", "unknown_error")
+        
+        group = result.get("group")
+        
+        if group:
+            group_link = f'<a href="https://vk.com/{group.screen_name}">{group.name}</a>'
+        else:
+            group_link = ""
+        
+        if status == "not_found":
             await message.answer(
                 "🔍 <b>Группа не найдена.</b>"
                 "Проверьте правильность введенной ссылки или ID.",
-                reply_markup=get_back_button(chat_id)
+                reply_markup=get_back_button(chat_id),
+                parse_mode="HTML",
             )
-        elif result["status"] == "access_denied":
+        elif status == "access_denied":
             await message.answer(
-                "🚫 <b>Ошибка доступа к группе.</b>\n"
-                "У бота нет прав для просмотра этого сообщества.",
-                reply_markup=get_back_button(chat_id)
+                "🚫 <b>Ошибка доступа.</b>\n"
+                "Перепроверьте токен доступа VK.",
+                reply_markup=get_back_button(chat_id),
+                parse_mode="HTML",
             )
-        elif result["status"] == "unknown_error":
-            await message.answer(
-                "⚠️ <b>Неизвестная ошибка.<b>\n"
-                "Что-то пошло не так...",
-                reply_markup=get_back_button(chat_id)
-            )
-        elif result["status"] == "private":
+        elif status == "private":
             await message.answer(
                 "🔒 <b>Доступ ограничен</b>\n"
-                "Данное сообщество является приватным.",
-                reply_markup=get_back_button(chat_id)
+                f"Сообщество {group_link} является приватным.",
+                reply_markup=get_back_button(chat_id),
+                parse_mode="HTML",
+                disable_web_page_preview=True,
             )
-        elif result["status"] == "closed":
+        elif status == "closed":
             await message.answer(
                 "🔒 <b>Доступ ограничен</b>\n"
-                "Данное сообщество является закрытым.",
-                reply_markup=get_back_button(chat_id)
+                f"Сообщество {group_link} является закрытым.",
+                reply_markup=get_back_button(chat_id),
+                parse_mode="HTML",
+                disable_web_page_preview=True,
+            )
+        elif status == "network_error":
+            await message.answer(
+                "🌐 <b>Ошибка сети.</b>\n"
+                "Проверьте подключение и попробуйте снова.",
+                reply_markup=get_back_button(chat_id),
+                parse_mode="HTML",
+            )
+        elif status == "timeout":
+            await message.answer(
+                "⏳ <b>Таймаут запроса.</b>\n"
+                "VK не ответил вовремя, попробуйте ещё раз.",
+                reply_markup=get_back_button(chat_id),
+                parse_mode="HTML",
+            )
+        elif status == "too_many_requests":
+            await message.answer(
+                "⚠️ <b>Слишком много запросов.</b>\n"
+                "Попробуйте через несколько секунд.",
+                reply_markup=get_back_button(chat_id),
+                parse_mode="HTML",
+            )
+        elif status == "unknown_error":
+            await message.answer(
+                "⚠️ <b>Неизвестная ошибка.</b>\n"
+                "Что-то пошло не так.",
+                reply_markup=get_back_button(chat_id),
+                parse_mode="HTML",
             )
         await state.clear()
         return

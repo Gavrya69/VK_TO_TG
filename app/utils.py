@@ -1,3 +1,4 @@
+import html
 import re
 
 
@@ -52,3 +53,29 @@ def split_post(text: str, limit: int=4096, first_limit: int|None=None) -> list[s
         chunks.append(text)
     
     return chunks
+
+
+def format_vk_text(text: str) -> str:    
+    if not text:
+        return ""
+    
+    # [club123|Andrew]
+    pattern = re.compile(r"\[(id|club)(-?\d+)\|(.+?)\]")
+    
+    text = html.escape(text)
+    
+    def repl(match):
+        obj_type = match.group(1)
+        obj_id = match.group(2)
+        title = match.group(3)
+        
+        if obj_type == "id":
+            url = f"https://vk.com/id{obj_id}"
+        else:
+            url = f"https://vk.com/club{obj_id}"
+        
+        return f"<a href='{url}'>{title}</a>"
+    
+    text = pattern.sub(repl, text)
+    
+    return text
