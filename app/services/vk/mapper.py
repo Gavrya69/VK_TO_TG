@@ -90,7 +90,7 @@ def map_posts(raw: dict) -> list[VKPost]:
                 id=item["id"],
                 owner_id=item["owner_id"],
                 text=item.get("text", ""),
-                date=datetime.fromtimestamp(item["date"], tz=timezone.ut),
+                date=datetime.fromtimestamp(item["date"], tz=timezone.utc),
                 is_pinned=item.get("is_pinned", False),
                 
                 signer_id=signer_id,

@@ -160,14 +160,14 @@ async def cmd_get_posts(message: Message):
         await message.answer(
             "✅ <b>Готово.</b>\n"
             "Посты были успешно отправлены.",
-            reply_markup=get_close_button("main_menu"),
+            reply_markup=get_close_button(),
             parse_mode="HTML"
         )
     else:
         await loading_msg.edit_text(
             "⚠️ <b>Ошибка.</b>\n"
             f"{result['status']}",
-            reply_markup=get_close_button("main_menu"),
+            reply_markup=get_close_button(),
             parse_mode="HTML"
         )
 

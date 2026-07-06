@@ -220,8 +220,9 @@ async def my_chats_menu(callback: CallbackQuery, state: FSMContext):
             disable_web_page_preview=True,
         )
     else:
-        await callback.answer(
+        await callback.message.edit_text(
             "ℹ️ Вы пока <i>не добавляли</i> бота в каналы и группы.",
+            reply_markup=get_my_chats_menu(chats),
             parse_mode="HTML",
             disable_web_page_preview=True,
         )
