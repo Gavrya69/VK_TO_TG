@@ -1,11 +1,13 @@
+import re
+
 from aiogram import Router, F
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.types import Message
 
 from database import db
 from services.vk.client import vk
 
-from keyboards.menu import get_private_main_menu, get_public_main_menu
+from keyboards.menu import get_private_main_menu, get_public_main_menu, get_confirm_binding_menu
 from keyboards.buttons import get_close_button
 
 from services.tg import send_post
@@ -263,6 +265,35 @@ async def cmd_some_command(message: Message):
     
     await message.answer("Done.", reply_markup=get_close_button())
     await loading_msg.delete()
+
+
+@router.message(
+    StateFilter(None),
+    F.text.regexp(r"^(https?://)?(www\.)?(vk\.com|vk\.ru)/")
+) # vk links
+async def detect_vk_link(message: Message):
+    text = message.text.strip()
+    
+    m = re.search(r"wall(-?\d+)_\d+", text)
+    if m:
+        owner_id = abs(int(m.group(1)))
+        result = await vk.check_group(str(owner_id))
+    else:
+        result = await vk.check_group(text)
+    
+    if not result["ok"]:
+        return
+    
+    group = result["group"]
+    
+    await message.reply(
+        f"👁️ Обнаружена ссылка на группу "
+        f'<i><a href="https://vk.com/{group.screen_name}">{group.name}</a></i>\n'
+        "Желаете привязать ее к данному чату?",
+        reply_markup=get_confirm_binding_menu(chat_id=message.chat.id, group_id=group.id),
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+    )
 
 
 @router.message(F.text.startswith("/"))

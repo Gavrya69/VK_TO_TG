@@ -2,6 +2,7 @@ from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from database.models import Base, Group, Chat, Binding, ChatAdmins
+from services.vk.models import VKGroup
 
 DATABASE_URL = "sqlite+aiosqlite:///data/database.db"
 
@@ -295,6 +296,46 @@ async def get_min_last_post_id(
     )
     
     return result.scalar_one_or_none()
+
+
+async def create_binding(
+    session,
+    chat_id: int,
+    chat_title: str,
+    chat_type: str,
+    group: VKGroup,
+    last_post_id: int,
+):
+    chat = await get_chat(session, chat_id)
+    if not chat:
+        chat = await add_chat(
+            session=session,
+            chat_id=chat_id,
+            title=chat_title,
+            chat_type=chat_type,
+        )
+    
+    db_group = await get_group(session, group_id=group.id)
+    if not db_group:
+        db_group = await add_group(
+            session=session,
+            group_id=group.id,
+            name=group.name,
+            screen_name=group.screen_name,
+            last_post_id=last_post_id
+        )
+    
+    binding = await get_binding(session=session, group_id=group.id, chat_id=chat_id)
+    if not binding:
+        await add_binding(
+            session=session,
+            group_id=group.id,
+            chat_id=chat_id,
+            last_post_id=last_post_id,
+        )
+        return {"created": True, "group": group}
+    
+    return {"created": False, "group": group}
 
 # --------------------
 # CHAT ADMINS

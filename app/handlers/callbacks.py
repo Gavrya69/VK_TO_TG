@@ -16,9 +16,10 @@ from keyboards.menu import (
     get_delete_menu,
     get_suggest_parse_menu,
     get_parse_menu,
+    get_confirm_binding_menu,
 )
 
-from keyboards.buttons import get_back_button
+from keyboards.buttons import get_back_button, get_close_button
 
 from handlers.states import GroupControl
 from services.tg import sync_chat_admins, send_post, update_user_chats
@@ -238,7 +239,7 @@ async def add_binding_menu(callback: CallbackQuery, state: FSMContext):
     await state.update_data(target_chat_id=chat_id)
     
     await callback.message.edit_text(
-        "Отправьте ссылку, ID или короткий адрес группы VK.\n"
+        "Отправьте ссылку, ID или короткий адрес VK-группы.\n"
         '(например, <i>"https://vk.com/club123"</i> или <i>"club123"</i>)',
         reply_markup=get_back_button(chat_id),
         parse_mode="HTML",
@@ -324,66 +325,71 @@ async def process_binding(message: Message, state: FSMContext):
                 reply_markup=get_back_button(chat_id),
                 parse_mode="HTML",
             )
+        
         await state.clear()
         return
     
     group = result["group"]
     
-    posts = (await vk.get_group_posts(link))["posts"]
-    last_post_id = posts[0].id if posts else 0
-    
-    async with db.SessionLocal() as session:
-        chat = await db.get_chat(session, chat_id)
-        if not chat:
-            chat = await db.add_chat(
-                session=session,
-                chat_id=chat_id,
-                title=(
-                    message.chat.username 
-                    if message.chat.type == "private" 
-                    else message.chat.title
-                ),
-                chat_type=message.chat.type,
-            )
-        
-        db_group = await db.get_group(session, group_id=group.id)
-        if not db_group:
-            db_group = await db.add_group(
-                session=session,
-                group_id=group.id,
-                name=group.name,
-                screen_name=group.screen_name,
-                last_post_id=last_post_id
-            )
-        
-        binding = await db.get_binding(session=session, group_id=group.id, chat_id=chat_id)
-        if not binding:
-            await db.add_binding(
-                session=session,
-                group_id=group.id,
-                chat_id=chat_id,
-                last_post_id=last_post_id,
-            )
-            await message.answer(
-                f'✅ Группа \"<i><a href="https://vk.com/{group.screen_name}">{group.name}</a></i>\" успешно привязана.\n'
-                f"Желаете перенести посты?",
-                reply_markup=get_suggest_parse_menu(chat_id, group.id),
-                parse_mode="HTML",
-                disable_web_page_preview=True,
-            )
-        else:
-            await message.answer(
-                f'ℹ️ Группа \"<i><a href="https://vk.com/{group.screen_name}">{group.name}</a></i>\" уже привязана.',
-                reply_markup=get_back_button(chat_id),
-                parse_mode="HTML",
-                disable_web_page_preview=True,
-            )
+    await message.answer(
+        f"🔍 Вы желаете привязать группу "
+        f'<i><a href="https://vk.com/{group.screen_name}">{group.name}</a></i>?',
+        reply_markup=get_confirm_binding_menu(message.chat.id, group.id, True),
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+    )
     
     await state.clear()
 
 
+@router.callback_query(F.data.startswith("process_binding:"))
+async def confirm_binding(callback: CallbackQuery):    
+    chat_id = int(callback.data.split(":")[1])
+    group_id = int(callback.data.split(":")[2])
+    back_button = bool(int(callback.data.split(":")[3]))
+    
+    group = (await vk.get_group_info(group_id))["group"]
+    
+    posts = (await vk.get_group_posts(group_id))["posts"]
+    last_post_id = posts[0].id if posts else 0
+    
+    async with db.SessionLocal() as session:
+        result = await db.create_binding(
+            session=session,
+            chat_id=chat_id,
+            chat_title=(
+                callback.message.chat.username 
+                if callback.message.chat.type == "private" 
+                else callback.message.chat.title
+            ),
+            chat_type=callback.message.chat.type,
+            group=group,
+            last_post_id=last_post_id
+            )
+        
+    if result["created"]:
+        await callback.message.edit_text(
+            f'✅ Группа <i><a href="https://vk.com/{group.screen_name}">{group.name}</a></i> успешно привязана.\n'
+            f"Желаете перенести посты?",
+            reply_markup=get_suggest_parse_menu(chat_id, group.id, back_button),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+    else:
+        await callback.message.edit_text(
+            f'ℹ️ Группа <i><a href="https://vk.com/{group.screen_name}">{group.name}</a></i> уже привязана.',
+            reply_markup = (
+                get_back_button(chat_id)
+                if back_button
+                else get_close_button()
+            ),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+
+
 @router.callback_query(F.data.startswith("parse_menu:"))
-async def parse_posts_menu(callback: CallbackQuery, state: FSMContext):
+async def parse_posts_menu(callback: CallbackQuery):
     chat_id = int(callback.data.split(":")[1])
     
     async with db.SessionLocal() as session:
@@ -437,6 +443,14 @@ async def process_parsing(message: Message, state: FSMContext):
         )
         return
     
+    if not 0 < posts_count <= 100:
+        await message.answer(
+            "⚠️ Пожалуйста, введите число <i>от 1 до 100</i>.",
+            reply_markup=get_back_button(chat_id),
+            parse_mode="HTML"
+        )
+        return
+    
     loading_msg = await message.answer(
         "⏳ <i>Подождите, начинаю переносить посты...</i>",
         parse_mode="HTML"
@@ -469,7 +483,7 @@ async def process_parsing(message: Message, state: FSMContext):
         await message.answer(
             "✅ <b>Готово.</b>\n"
             "Посты были успешно отправлены.",
-            reply_markup=get_back_button("main_menu"),
+            reply_markup=get_close_button(),
             parse_mode="HTML"
         )
         
@@ -477,7 +491,7 @@ async def process_parsing(message: Message, state: FSMContext):
         await loading_msg.edit_text(
             "⚠️ <b>Ошибка.</b>\n"
             f"{result['status']}",
-            reply_markup=get_back_button("main_menu"),
+            reply_markup=get_close_button(),
             parse_mode="HTML",
         )
 

@@ -103,15 +103,35 @@ def get_parse_menu(chat_id: int, bindings: list=None, back_button: bool=True):
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-def get_suggest_parse_menu(chat_id: int, vk_group_link: int):
+def get_suggest_parse_menu(chat_id: int, group_id: int, back_button: bool=False):
     keyboard = []
     keyboard.append([
         InlineKeyboardButton(
             text="📥 Перенести посты", 
-            callback_data=f"parse:{chat_id}:{vk_group_link}"
+            callback_data=f"parse:{chat_id}:{group_id}"
         )
     ])
     
-    append_back_button(keyboard, "main_menu")
+    if back_button:
+        append_back_button(keyboard, chat_id)
+    else: 
+        append_close_button(keyboard)
+    
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_confirm_binding_menu(chat_id: int, group_id: int, back_button: bool=False):
+    keyboard = []
+    keyboard.append([
+        InlineKeyboardButton(
+            text="🔗 Привязать группу", 
+            callback_data=f"process_binding:{chat_id}:{group_id}:{int(back_button)}"
+        )
+    ])
+    
+    if back_button:
+        append_back_button(keyboard, chat_id)
+    else: 
+        append_close_button(keyboard)
     
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
