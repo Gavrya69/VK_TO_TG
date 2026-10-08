@@ -2,6 +2,10 @@ import html
 import re
 
 
+VK_REF_RE = re.compile(r"\[(?P<target>[^\]|]+)\|(?P<ref_title>[^\]]+)\]")
+VK_MENTION_RE = re.compile(r"@[A-Za-z0-9_.]+(?:\s+\((?P<mention_title>[^)]+)\))?")
+
+
 def extract_group_ref(value: str | int) -> str | int:
     if isinstance(value, int):
         return value
@@ -55,27 +59,53 @@ def split_post(text: str, limit: int=4096, first_limit: int|None=None) -> list[s
     return chunks
 
 
-def format_vk_text(text: str) -> str:    
+def vk_ref_to_url(target: str) -> str | None:
+    target = target.strip()
+    
+    if target.startswith(("http://", "https://")):
+        return target
+    
+    if re.fullmatch(r"(?:id|club|public)-?\d+", target):
+        return f"https://vk.ru/{target}"
+    
+    return None
+
+
+def format_vk_text(text: str) -> str:
     if not text:
         return ""
     
-    # [club123|Andrew]
-    pattern = re.compile(r"\[(id|club)(-?\d+)\|(.+?)\]")
+    pattern = re.compile(
+        rf"{VK_REF_RE.pattern}|{VK_MENTION_RE.pattern}"
+    )
     
-    text = html.escape(text)
+    parts = []
+    last = 0
     
-    def repl(match):
-        obj_type = match.group(1)
-        obj_id = match.group(2)
-        title = match.group(3)
+    for match in pattern.finditer(text):
+        parts.append(html.escape(text[last:match.start()]))
         
-        if obj_type == "id":
-            url = f"https://vk.com/id{obj_id}"
+        target = match.group("target")
+        ref_title = match.group("ref_title")
+        mention_title = match.group("mention_title")
+        
+        if target is not None:
+            title = html.escape(ref_title)
+            url = vk_ref_to_url(target)
+            
+            if url:
+                parts.append(f'<a href="{html.escape(url, quote=True)}">{title}</a>')
+            else:
+                parts.append(title)
+        
+        elif mention_title is not None:
+            parts.append(html.escape(mention_title))
+        
         else:
-            url = f"https://vk.com/club{obj_id}"
+            parts.append(html.escape(match.group(0)))
         
-        return f"<a href='{url}'>{title}</a>"
+        last = match.end()
     
-    text = pattern.sub(repl, text)
+    parts.append(html.escape(text[last:]))
     
-    return text
+    return "".join(parts)

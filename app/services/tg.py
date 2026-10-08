@@ -1,5 +1,6 @@
 import asyncio
 import html
+import re
 from zoneinfo import ZoneInfo
 
 from aiogram import Bot
@@ -80,7 +81,7 @@ def format_post(post: VKPost) -> str:
     parts.append("</blockquote>")
     
     if post.text:
-        parts.append(post.text)
+        parts.append(format_vk_text(post.text))
     
     return "\n".join(parts)
 
